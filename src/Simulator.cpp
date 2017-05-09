@@ -59,20 +59,47 @@ namespace BallSimulator {
             ball->apply_velocity(divisor);
         }
 
-        for (unsigned long i = 0; i < _entities->size(); i++) {
-            auto b = _entities->at(i);
-            auto colliding = false;
+        auto worldBounds = new Rectangle<Ball*>(0, 0, width(), height());
+        auto quadtree = Quadtree<Ball*, 5, 10>(0, worldBounds);
 
-            for (auto j = i + 1; j < _entities->size(); j++) {
-                auto bb = _entities->at(j);
-                if (b->collides(*bb)) {
-                    colliding = true;
-                    b->collide(*bb);
+        for (auto it = _entities->begin(); it != _entities->end(); it++) {
+            quadtree.insert(((Ball*) *it)->rect());
+        }
+
+        auto queued = new std::vector<Rectangle<Ball*>*>();
+        for (auto it = _entities->begin(); it != _entities->end(); it++) {
+            auto ballA = (Ball*) *it;
+            auto rect = ballA->rect();
+            queued->clear();
+            quadtree.retrieve(queued, rect);
+
+            for (auto bb = queued->begin(); bb != queued->end(); bb++) {
+                auto ballB = ((Rectangle<Ball*>*) *bb)->value;
+
+                if (ballA->collides(*ballB)) {
+                    ballA->collide(*ballB);
                 }
             }
 
-            b->isInsideCollision = colliding;
+            delete rect;
         }
+
+        delete queued;
+
+//        for (unsigned long i = 0; i < _entities->size(); i++) {
+//            auto b = _entities->at(i);
+//            auto colliding = false;
+//
+//            for (auto j = i + 1; j < _entities->size(); j++) {
+//                auto bb = _entities->at(j);
+//                if (b->collides(*bb)) {
+//                    colliding = true;
+//                    b->collide(*bb);
+//                }
+//            }
+//
+//            b->isInsideCollision = colliding;
+//        }
 
         for (auto it = _entities->begin(); it != _entities->end(); it++) {
             auto ball = (Ball*) *it;
@@ -116,6 +143,21 @@ namespace BallSimulator {
 
     float Ball::mass() {
         return _mass;
+    }
+
+    Rectangle<Ball*>* Ball::rect() {
+        auto pos = position();
+        auto left = pos.x - radius();
+        auto top = pos.y + radius();
+        auto right = pos.x + radius();
+        auto bottom = pos.y - radius();
+
+        auto w = right - left;
+        auto h = bottom - top;
+
+        auto rect = new Rectangle<Ball*>(left, top, w, h);
+        rect->value = this;
+        return rect;
     }
 
     vec2f& Ball::position() {

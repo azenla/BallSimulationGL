@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     srand((unsigned int) std::chrono::duration_cast<std::chrono::seconds>
                        (std::chrono::system_clock::now().time_since_epoch()).count());
     world = new BallSimulator::World(1024, 1024);
-    for (auto i = 1; i <= 5; i++) {
+    for (auto i = 1; i <= 20; i++) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
         world->entities().push_back(ball);
     }
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 
     glfwSetErrorCallback(handle_error);
 
-    window = glfwCreateWindow(512, 512, "Ball Simulation", nullptr, nullptr);
+    window = glfwCreateWindow(1024, 1024, "Ball Simulation", nullptr, nullptr);
     if (window == nullptr) {
         glfwTerminate();
         return 1;

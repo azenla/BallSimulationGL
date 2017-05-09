@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "vec2.h"
+#include "quadtree.h"
 
 namespace BallSimulator {
     const float RealWorldGravity = 9.18f;
@@ -32,6 +33,8 @@ namespace BallSimulator {
         float radius();
         vec2f& position();
         vec2f& velocity();
+
+        Rectangle<Ball*>* rect();
 
         bool collides(Ball &other);
         void collide(Ball &other);

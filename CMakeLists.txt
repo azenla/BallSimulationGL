@@ -10,6 +10,6 @@ add_subdirectory(deps/glfw)
 
 find_package(OpenGL REQUIRED)
 
-set(SOURCE_FILES src/main.cpp src/Simulator.cpp src/Simulator.h src/vec2.h)
+set(SOURCE_FILES src/main.cpp src/quadtree.h src/Simulator.cpp src/Simulator.h src/vec2.h)
 add_executable(BallSimulator ${SOURCE_FILES})
 target_link_libraries(BallSimulator glfw ${OPENGL_LIBRARIES})
