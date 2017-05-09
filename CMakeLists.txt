@@ -1,13 +1,15 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.5)
 project(BallSimulator)
 
 set(CMAKE_CXX_STANDARD 11)
 
-find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(deps/glfw)
 
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
+find_package(OpenGL REQUIRED)
 
 set(SOURCE_FILES src/main.cpp src/Simulator.cpp src/Simulator.h src/vec2.h)
 add_executable(BallSimulator ${SOURCE_FILES})
-target_link_libraries(BallSimulator ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+target_link_libraries(BallSimulator glfw ${OPENGL_LIBRARIES})

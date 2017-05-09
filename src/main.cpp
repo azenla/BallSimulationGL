@@ -1,9 +1,12 @@
 #include "Simulator.h"
 
 #include <iostream>
+#include <chrono>
 
+extern "C" {
+#include <GLFW/glfw3.h>
 #include <GL/gl.h>
-#include <GL/glut.h>
+}
 
 namespace S = BallSimulator;
 
@@ -32,7 +35,7 @@ double fps = 60.0;
 
 void render() {
     frames++;
-    auto elapsed = glutGet(GLUT_ELAPSED_TIME);
+    auto elapsed = (int) (glfwGetTime() * 1000);
 
     if (elapsed - lastTimeBase > 1000) {
         fps = frames * 1000.0 / (elapsed - lastTimeBase);
@@ -50,45 +53,47 @@ void render() {
         auto pos = ball->position();
         drawFilledCircle(pos.x, pos.y, ball->radius());
     }
-    glutSwapBuffers();
 }
 
-void init() {
+void init(GLFWwindow *window) {
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
+
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glColor3f(1.0, 0.0, 0.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-
-    auto w = glutGet(GLUT_WINDOW_WIDTH);
-    auto h = glutGet(GLUT_WINDOW_HEIGHT);
-    glViewport(0, 0, w, h);
-    gluOrtho2D(0, w, h, 0);
 }
 
-void reshape(int w, int h) {
+void reshape(GLFWwindow *window, int w, int h) {
+    std::cout << "Window Size: " << w << "x" << h << std::endl;
+
     glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, w, h, 0);
     glMatrixMode(GL_MODELVIEW);
-    world->resize(w, h);
+    glLoadIdentity();
+    glOrtho(0, w, h, 0, -1, 1);
+
+    world->resize(float(w), float(h));
     world->scatter();
 }
 
-void idle() {
-    glutPostRedisplay();
-}
-
-void mouse(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+void mouse(GLFWwindow *window, int button, int action, int mods) {
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
         auto ball = new S::Ball(5.0f, 20.0f);
-        ball->position().set(x, y);
+        ball->position().set(float(x), float(y));
         ball->velocity().set(10.0f, 10.0f);
         world->entities().push_back(ball);
     }
 }
 
+void handle_error(int code, const char *msg) {
+}
+
 int main(int argc, char **argv) {
+    srand((unsigned int) std::chrono::duration_cast<std::chrono::seconds>
+                       (std::chrono::system_clock::now().time_since_epoch()).count());
     world = new S::World(1024, 1024);
     for (auto i = 1; i <= 5; i++) {
         auto ball = new S::Ball(5.0f, 20.0f);
@@ -96,16 +101,38 @@ int main(int argc, char **argv) {
     }
     world->scatter();
 
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutInitWindowSize(1024, 1024);
-    glutCreateWindow("Ball Simulation");
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    init();
-    glutDisplayFunc(render);
-    glutReshapeFunc(reshape);
-    glutMouseFunc(mouse);
-    glutIdleFunc(idle);
-    glutMainLoop();
+    if (glfwInit() == 0) {
+        return 1;
+    }
+
+    GLFWwindow *window;
+
+    glfwSetErrorCallback(handle_error);
+
+    window = glfwCreateWindow(512, 512, "Ball Simulation", nullptr, nullptr);
+    if (window == nullptr) {
+        glfwTerminate();
+        return 1;
+    }
+
+    glfwSetMouseButtonCallback(window, mouse);
+    glfwSwapInterval(1);
+    glfwMakeContextCurrent(window);
+
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
+    reshape(window, w, h);
+    glfwSetFramebufferSizeCallback(window, reshape);
+
+    init(window);
+
+    while (glfwWindowShouldClose(window) == 0) {
+        render();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
+
     return 0;
 }
