@@ -34,7 +34,7 @@ namespace BallSimulator {
         for (auto it = _entities->begin(); it != _entities->end(); it++) {
             auto x = std::rand() / (RAND_MAX / _width);
             auto y = std::rand() / (RAND_MAX / _height);
-            auto ball = *it;
+            auto ball = (Ball*) *it;
 
             ball->position().set(x, y);
         }
@@ -54,24 +54,28 @@ namespace BallSimulator {
 
     void World::check_collisions(float divisor) {
         for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto ball = *it;
+            auto ball = (Ball*) *it;
             ball->apply_gravity(*this, divisor);
             ball->apply_velocity(divisor);
         }
 
         for (unsigned long i = 0; i < _entities->size(); i++) {
             auto b = _entities->at(i);
+            auto colliding = false;
 
             for (auto j = i + 1; j < _entities->size(); j++) {
                 auto bb = _entities->at(j);
                 if (b->collides(*bb)) {
+                    colliding = true;
                     b->collide(*bb);
                 }
             }
+
+            b->isInsideCollision = colliding;
         }
 
         for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto ball = *it;
+            auto ball = (Ball*) *it;
             ball->check_world_boundary(*this);
         }
     }
@@ -129,7 +133,7 @@ namespace BallSimulator {
         auto radiusSquared = totalRadius * totalRadius;
         auto distanceSquared = diffX * diffX + diffY * diffY;
 
-        return radiusSquared - distanceSquared > Epsilon;
+        return distanceSquared <= radiusSquared;
     }
 
     void Ball::collide(Ball &other) {
@@ -143,16 +147,15 @@ namespace BallSimulator {
 
         vec2f minimumTranslationDistance;
 
-        if (std::abs(distance) < Epsilon) {
-            minimumTranslationDistance = delta * ((radius() + other.radius() - distance) / distance);
-        } else {
+        auto isOnTopOfEachOther = std::abs(distance) <= Epsilon;
+        if (isOnTopOfEachOther) {
             distance = other.radius() + radius() - 1.0f;
             delta.set(other.radius() + radius(), 0.0f);
-            minimumTranslationDistance = delta * ((radius() + other.radius() - distance) / distance);
         }
+        minimumTranslationDistance = delta * ((radius() + other.radius() - distance) / distance);
 
-        auto inverseMassA = 1 / mass();
-        auto inverseMassB = 1 / other.mass();
+        auto inverseMassA = 1.0f / mass();
+        auto inverseMassB = 1.0f / other.mass();
         auto inverseMassTotal = inverseMassA + inverseMassB;
 
         auto targetPositionA = position() + (minimumTranslationDistance * (inverseMassA / inverseMassTotal));
@@ -168,12 +171,8 @@ namespace BallSimulator {
             return;
         }
 
-        auto impulseFactor = -1.0f * velocityNumber / inverseMassTotal;
+        auto impulseFactor = -(velocityNumber / inverseMassTotal);
         auto impulse = minimumTranslationDistance.normalize() * impulseFactor;
-
-        if (std::isnan(impulse.length())) {
-            impulse.set(0.0f, 0.0f);
-        }
 
         auto deltaVelocityA = impulse * inverseMassA;
         auto deltaVelocityB = -(impulse * inverseMassB);
@@ -211,24 +210,24 @@ namespace BallSimulator {
     }
 
     void Ball::check_world_boundary(World &world) {
-        auto r2 = radius();
+        auto r2 = radius() * 2;
         auto vel = _velocity;
         auto pos = _position;
 
         if (pos->x - r2 < Epsilon) {
             pos->x = r2;
-            pos->x = -vel->x;
+            vel->x = -(vel->x);
         } else if (pos->x + r2 > world.width()) {
             pos->x = world.width() - r2;
-            vel->x = -vel->x;
+            vel->x = -(vel->x);
         }
 
         if (pos->y - r2 < Epsilon) {
             pos->y = r2;
-            vel->y = -vel->y;
+            vel->y = -(vel->y);
         } else if (pos->y + r2 > world.height()) {
             pos->y = world.height() - r2;
-            vel->y = -vel->y;
+            vel->y = -(vel->y);
         }
     }
 }

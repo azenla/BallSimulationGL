@@ -21,6 +21,8 @@ namespace BallSimulator {
         vec2f *_velocity;
 
     public:
+        bool isInsideCollision = false;
+
         Ball(float mass, float radius);
         Ball(float mass, float radius, vec2f& position);
         Ball(float mass, float radius, vec2f& position, vec2f& velocity);

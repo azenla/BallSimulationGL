@@ -2,15 +2,14 @@
 
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 extern "C" {
 #include <GLFW/glfw3.h>
 #include <GL/gl.h>
 }
 
-namespace S = BallSimulator;
-
-S::World *world;
+BallSimulator::World *world;
 
 void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
     int i;
@@ -32,10 +31,12 @@ void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
 int lastTimeBase = 0;
 int frames = 0;
 double fps = 60.0;
+double lastFrameTime = 0.0;
 
 void render() {
     frames++;
-    auto elapsed = (int) (glfwGetTime() * 1000);
+    auto glTime = glfwGetTime();
+    auto elapsed = (int) (glTime * 1000);
 
     if (elapsed - lastTimeBase > 1000) {
         fps = frames * 1000.0 / (elapsed - lastTimeBase);
@@ -44,13 +45,22 @@ void render() {
         std::cout << "FPS: " << fps << std::endl;
     }
 
-    world->tick(1000.0f / float(fps));
+    auto micros = glTime * 1000 * 1000;
+    auto timeHasPassed = micros - lastFrameTime;
+    auto divisor = float(timeHasPassed) / 1000.0f;
+    world->tick(divisor);
+    lastFrameTime = micros;
 
     glClear(GL_COLOR_BUFFER_BIT);
     auto entities = &world->entities();
     for (auto it = entities->begin(); it != entities->end(); it++) {
-        auto ball = *it;
+        auto ball = (BallSimulator::Ball*) *it;
         auto pos = ball->position();
+        if (ball->isInsideCollision) {
+            glColor3f(1.0, 1.0, 0.0);
+        } else {
+            glColor3f(1.0, 0.0, 0.0);
+        }
         drawFilledCircle(pos.x, pos.y, ball->radius());
     }
 }
@@ -81,7 +91,7 @@ void mouse(GLFWwindow *window, int button, int action, int mods) {
     double x, y;
     glfwGetCursorPos(window, &x, &y);
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
-        auto ball = new S::Ball(5.0f, 20.0f);
+        auto ball = new BallSimulator::Ball(5.0f, 20.0f);
         ball->position().set(float(x), float(y));
         ball->velocity().set(10.0f, 10.0f);
         world->entities().push_back(ball);
@@ -94,9 +104,9 @@ void handle_error(int code, const char *msg) {
 int main(int argc, char **argv) {
     srand((unsigned int) std::chrono::duration_cast<std::chrono::seconds>
                        (std::chrono::system_clock::now().time_since_epoch()).count());
-    world = new S::World(1024, 1024);
+    world = new BallSimulator::World(1024, 1024);
     for (auto i = 1; i <= 5; i++) {
-        auto ball = new S::Ball(5.0f, 20.0f);
+        auto ball = new BallSimulator::Ball(5.0f, 20.0f);
         world->entities().push_back(ball);
     }
     world->scatter();
@@ -116,8 +126,8 @@ int main(int argc, char **argv) {
     }
 
     glfwSetMouseButtonCallback(window, mouse);
-    glfwSwapInterval(1);
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
 
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);

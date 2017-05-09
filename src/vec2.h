@@ -40,30 +40,30 @@ public:
     vec2<T> operator /(vec2<T> v) { return vec2<T>(x / v.x, y / v.y); }
     vec2<T> operator *(vec2<T> v) { return vec2<T>(x * v.x, y * v.y); }
 
-    vec2<T> operator +(double s) { return vec2<T>(x + s, y + s); }
-    vec2<T> operator -(double s) { return vec2<T>(x - s, y - s); }
-    vec2<T> operator *(double s) { return vec2<T>(x * s, y * s); }
-    vec2<T> operator /(double s) { return vec2<T>(x / s, y / s); }
+    vec2<T> operator +(T s) { return vec2<T>(x + s, y + s); }
+    vec2<T> operator -(T s) { return vec2<T>(x - s, y - s); }
+    vec2<T> operator *(T s) { return vec2<T>(x * s, y * s); }
+    vec2<T> operator /(T s) { return vec2<T>(x / s, y / s); }
 
-    vec2<T> &operator +=(double s) {
+    vec2<T> &operator +=(T s) {
         x += s;
         y += s;
         return *this;
     }
 
-    vec2<T> &operator -=(double s) {
+    vec2<T> &operator -=(T s) {
         x -= s;
         y -= s;
         return *this;
     }
 
-    vec2<T> &operator *=(double s) {
+    vec2<T> &operator *=(T s) {
         x *= s;
         y *= s;
         return *this;
     }
 
-    vec2<T> &operator /=(double s) {
+    vec2<T> &operator /=(T s) {
         x /= s;
         y /= s;
         return *this;
@@ -76,16 +76,6 @@ public:
 
     void set(vec2<T> input) {
         set(input.x, input.y);
-    }
-
-    void rotate(double deg) {
-        double theta = deg / 180.0 * M_PI;
-        double c = cos(theta);
-        double s = sin(theta);
-        double tx = x * c - y * s;
-        double ty = x * s + y * c;
-        x = tx;
-        y = ty;
     }
 
     vec2<T> normalize() {
