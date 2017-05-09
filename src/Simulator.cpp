@@ -133,7 +133,7 @@ namespace BallSimulator {
         auto radiusSquared = totalRadius * totalRadius;
         auto distanceSquared = diffX * diffX + diffY * diffY;
 
-        return distanceSquared <= radiusSquared;
+        return (radiusSquared - distanceSquared) > Epsilon;
     }
 
     void Ball::collide(Ball &other) {
