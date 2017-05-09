@@ -60,31 +60,32 @@ namespace BallSimulator {
         }
 
         auto worldBounds = new Rectangle<Ball*>(0, 0, width(), height());
-        auto quadtree = Quadtree<Ball*, 5, 10>(0, worldBounds);
+        Quadtree<Ball*, 5, 3> quadtree(0, worldBounds);
 
         for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            quadtree.insert(((Ball*) *it)->rect());
+            quadtree.insert(new Rectangle<Ball*>(((Ball*) *it)->rect()));
         }
 
-        auto queued = new std::vector<Rectangle<Ball*>*>();
+        std::vector<Rectangle<Ball*>*> queued;
         for (auto it = quadtree.objects()->begin(); it != quadtree.objects()->end(); it++) {
-            queued->clear();
             auto rect = (Rectangle<Ball*>*) *it;
             auto ballA = rect->value;
-            quadtree.retrieve(queued, rect);
+            quadtree.retrieve(&queued, rect);
 
-            for (auto bb = queued->begin(); bb != queued->end(); bb++) {
+            auto colliding = false;
+            for (auto bb = queued.begin(); bb != queued.end(); bb++) {
                 auto ballB = ((Rectangle<Ball*>*) *bb)->value;
 
                 if (ballA->collides(*ballB)) {
                     ballA->collide(*ballB);
+                    colliding = true;
                 }
             }
 
-            delete rect;
-        }
+            ballA->isInsideCollision = colliding;
 
-        delete queued;
+            queued.clear();
+        }
 
 //        for (unsigned long i = 0; i < _entities->size(); i++) {
 //            auto b = _entities->at(i);
@@ -145,7 +146,7 @@ namespace BallSimulator {
         return _mass;
     }
 
-    Rectangle<Ball*>* Ball::rect() {
+    Rectangle<Ball*> Ball::rect() {
         auto pos = position();
         auto left = pos.x - radius();
         auto top = pos.y + radius();
@@ -155,8 +156,8 @@ namespace BallSimulator {
         auto w = right - left;
         auto h = bottom - top;
 
-        auto rect = new Rectangle<Ball*>(left, top, w, h);
-        rect->value = this;
+        Rectangle<Ball*> rect(left, top, w, h);
+        rect.value = this;
         return rect;
     }
 

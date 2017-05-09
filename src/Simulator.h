@@ -34,7 +34,7 @@ namespace BallSimulator {
         vec2f& position();
         vec2f& velocity();
 
-        Rectangle<Ball*>* rect();
+        Rectangle<Ball*> rect();
 
         bool collides(Ball &other);
         void collide(Ball &other);

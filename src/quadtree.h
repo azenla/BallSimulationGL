@@ -33,8 +33,8 @@ private:
     Rectangle<T> *_bounds;
 
     void split() {
-        auto subWidth = (float) (_bounds->w / 2.0f);
-        auto subHeight = (float) (_bounds->h / 2.0f);
+        auto subWidth = _bounds->w / 2.0f;
+        auto subHeight = _bounds->h / 2.0f;
         auto x = _bounds->x;
         auto y = _bounds->y;
 
@@ -87,8 +87,16 @@ public:
     }
 
     ~Quadtree() {
-        delete _objects;
-        delete[] *_nodes;
+        if (_objects) {
+            _objects->clear();
+            delete _objects;
+        }
+
+        for (auto i = 0; i < 4; i++) {
+            if (_nodes[i] != nullptr) {
+                delete _nodes[i];
+            }
+        }
     }
 
     void clear() {
