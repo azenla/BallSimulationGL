@@ -67,10 +67,10 @@ namespace BallSimulator {
         }
 
         auto queued = new std::vector<Rectangle<Ball*>*>();
-        for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto ballA = (Ball*) *it;
-            auto rect = ballA->rect();
+        for (auto it = quadtree.objects()->begin(); it != quadtree.objects()->end(); it++) {
             queued->clear();
+            auto rect = (Rectangle<Ball*>*) *it;
+            auto ballA = rect->value;
             quadtree.retrieve(queued, rect);
 
             for (auto bb = queued->begin(); bb != queued->end(); bb++) {

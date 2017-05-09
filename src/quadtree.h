@@ -104,7 +104,7 @@ public:
     void insert(Rectangle<T> *rect) {
         if (_nodes[0] != nullptr) {
             auto idx = getIndex(rect);
-            if (idx != -1) {
+            if (idx != -1 && _nodes[idx] != nullptr) {
                 _nodes[idx]->insert(rect);
             }
         }
@@ -140,5 +140,9 @@ public:
             auto rectangle = (Rectangle<T>*) *it;
             objects->push_back(rectangle);
         }
+    }
+
+    std::vector<Rectangle<T> *> *objects() {
+        return _objects;
     }
 };
