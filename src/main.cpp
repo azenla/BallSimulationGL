@@ -6,23 +6,38 @@
 
 extern "C" {
 #include <GLFW/glfw3.h>
-#include <GL/gl.h>
 }
 
 BallSimulator::World *world;
 
+#define TRIANGLE_AMOUNT 20
+
+static const int TriangleAmount = TRIANGLE_AMOUNT;
+static const float TwicePi = 2.0f * 3.1415926f;
+static const float CircleMagicConstant = TwicePi / TriangleAmount;
+
+static float CircleDrawingCacheCos[TRIANGLE_AMOUNT + 1] = {};
+static float CircleDrawingCacheSin[TRIANGLE_AMOUNT + 1] = {};
+
+static void fulfillDrawingCache() {
+    for (auto i = 0; i <= TriangleAmount; i++) {
+        CircleDrawingCacheCos[i] = cos(i * CircleMagicConstant);
+    }
+
+    for (auto i = 0; i <= TriangleAmount; i++) {
+        CircleDrawingCacheSin[i] = sin(i * CircleMagicConstant);
+    }
+}
+
 void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
     int i;
-    auto triangleAmount = 20;
-
-    auto twicePi = 2.0f * 3.1415926f;
 
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y);
-    for(i = 0; i <= triangleAmount;i++) {
+    for(i = 0; i <= TriangleAmount; i++) {
         glVertex2f(
-                (GLfloat) (x + (radius * cos(i * twicePi / triangleAmount))),
-                (GLfloat) (y + (radius * sin(i * twicePi / triangleAmount)))
+                (GLfloat) (x + (radius * CircleDrawingCacheCos[i])),
+                (GLfloat) (y + (radius * CircleDrawingCacheSin[i]))
         );
     }
     glEnd();
@@ -99,9 +114,12 @@ void mouse(GLFWwindow *window, int button, int action, int mods) {
 }
 
 void handle_error(int code, const char *msg) {
+    std::cerr << "GLFW Error: (code = " << code << "): " << msg << std::endl;
 }
 
 int main(int argc, char **argv) {
+    fulfillDrawingCache();
+
     srand((unsigned int) std::chrono::duration_cast<std::chrono::seconds>
                        (std::chrono::system_clock::now().time_since_epoch()).count());
     world = new BallSimulator::World(1024, 1024);
@@ -119,7 +137,7 @@ int main(int argc, char **argv) {
 
     glfwSetErrorCallback(handle_error);
 
-    window = glfwCreateWindow(512, 512, "Ball Simulation", nullptr, nullptr);
+    window = glfwCreateWindow(1024, 1024, "Ball Simulation", nullptr, nullptr);
     if (window == nullptr) {
         glfwTerminate();
         return 1;
