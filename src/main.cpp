@@ -43,10 +43,28 @@ void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
     glEnd();
 }
 
+void drawUnfilledRect(float x1, float y1, float x2, float y2) {
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y1);
+    glVertex2f(x2, y2);
+    glVertex2f(x1, y2);
+    glEnd();
+}
+
 int lastTimeBase = 0;
 int frames = 0;
 double fps = 60.0;
 double lastFrameTime = 0.0;
+
+void render_quadtree_bounds(Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> *tree) {
+    auto bounds = tree->bounds();
+
+    glColor3f(0.0f, 0.0f, 1.0f);
+    drawUnfilledRect(bounds->x, bounds->y, bounds->x + bounds->w, bounds->y + bounds->h);
+
+    tree->forEachNode(render_quadtree_bounds);
+}
 
 void render() {
     frames++;
@@ -78,6 +96,8 @@ void render() {
         }
         drawFilledCircle(pos.x, pos.y, ball->radius());
     }
+
+    render_quadtree_bounds(world->quadtree());
 }
 
 void init(GLFWwindow *window) {
@@ -109,7 +129,7 @@ void mouse(GLFWwindow *window, int button, int action, int mods) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
         ball->position().set(float(x), float(y));
         ball->velocity().set(10.0f, 10.0f);
-        world->entities()->push_back(ball);
+        world->add(ball);
     }
 }
 
@@ -125,7 +145,7 @@ int main(int argc, char **argv) {
     world = new BallSimulator::World(1024, 1024);
     for (auto i = 1; i <= 5; i++) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        world->entities()->push_back(ball);
+        world->add(ball);
     }
     world->scatter();
 

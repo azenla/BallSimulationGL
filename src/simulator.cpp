@@ -1,19 +1,19 @@
 #include "simulator.h"
-#include "config.h"
 
 #include <random>
 #include <iostream>
 
 namespace BallSimulator {
     World::World(float width, float height) {
-        _width = width;
-        _height = height;
         _entities = new std::vector<Ball*>();
         _gravity = DefaultGravity;
+        _bounds = new Rectangle<Ball*>(0.0f, 0.0f, width, height);
+        _quadtree = new Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS>(0, bounds());
     }
 
     World::~World() {
         delete _entities;
+        delete _quadtree;
     }
 
     float World::width() {
@@ -27,6 +27,13 @@ namespace BallSimulator {
     void World::resize(float width, float height) {
         _width = width;
         _height = height;
+
+        _bounds->w = width;
+        _bounds->h = height;
+
+        delete _quadtree;
+
+        _quadtree = new Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS>(0, bounds());
 
         scatter();
     }
@@ -57,22 +64,29 @@ namespace BallSimulator {
         _entities->push_back(ball);
     }
 
+    Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS>* World::quadtree() {
+        return _quadtree;
+    }
+
+    Rectangle<Ball*>* World::bounds() {
+        return _bounds;
+    }
+
     static void DoQuadtreeCollisionDetection(World *world) {
-        auto worldBounds = new Rectangle<Ball*>(0, 0, world->width(), world->height());
-        Quadtree<Ball*, 5, 3> quadtree(0, worldBounds);
+        auto tree = world->quadtree();
+
+        tree->clear();
 
         auto entities = world->entities();
         for (auto it = entities->begin(); it != entities->end(); it++) {
-            quadtree.insert(new Rectangle<Ball*>(((Ball*) *it)->rect()));
+            tree->insert(new Rectangle<Ball*>(((Ball*) *it)->rect()));
         }
 
         std::vector<Rectangle<Ball*>*> queued;
-        for (auto it = quadtree.objects()->begin(); it != quadtree.objects()->end(); it++) {
+        for (auto it = tree->objects()->begin(); it != tree->objects()->end(); it++) {
             auto rect = (Rectangle<Ball*>*) *it;
             auto ballA = rect->value;
-            quadtree.retrieve(&queued, rect);
-
-            std::cerr << "Size of Quadtree Queue: " << queued.size() << std::endl;
+            tree->retrieve(&queued, rect);
 
             auto colliding = false;
             for (auto bb = queued.begin(); bb != queued.end(); bb++) {

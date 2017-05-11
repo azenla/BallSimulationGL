@@ -4,6 +4,7 @@
 
 #include "vec2.h"
 #include "quadtree.h"
+#include "config.h"
 
 namespace BallSimulator {
     const float RealWorldGravity = 9.18f;
@@ -50,6 +51,8 @@ namespace BallSimulator {
         float _height;
         float _gravity;
         std::vector<Ball*> *_entities;
+        Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> *_quadtree;
+        Rectangle<Ball*> *_bounds;
 
     public:
         World(float width, float height);
@@ -68,5 +71,7 @@ namespace BallSimulator {
         void add(Ball* ball);
 
         std::vector<Ball*> *entities();
+        Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> *quadtree();
+        Rectangle<Ball*> *bounds();
     };
 }

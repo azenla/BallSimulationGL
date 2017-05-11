@@ -38,19 +38,19 @@ private:
         auto x = _bounds->x;
         auto y = _bounds->y;
 
-        _nodes[0] = new Quadtree(_level + 1, new Rectangle<T>{
+        _nodes[0] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
                 x + subWidth, y, subWidth, subHeight
         });
 
-        _nodes[1] = new Quadtree(_level + 1, new Rectangle<T>{
+        _nodes[1] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
                 x, y, subWidth, subHeight
         });
 
-        _nodes[2] = new Quadtree(_level + 1, new Rectangle<T>{
+        _nodes[2] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
                 x, y + subHeight, subWidth, subHeight
         });
 
-        _nodes[3] = new Quadtree(_level + 1, new Rectangle<T>{
+        _nodes[3] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
                 x + subWidth, y + subHeight, subWidth, subHeight
         });
     }
@@ -152,5 +152,17 @@ public:
 
     std::vector<Rectangle<T> *> *objects() {
         return _objects;
+    }
+
+    void forEachNode(void func(Quadtree<T, MaxObjects, MaxLevels> *tree)) {
+        for (auto i = 0; i < 4; i++) {
+            if (_nodes[i] != nullptr) {
+                func(_nodes[i]);
+            }
+        }
+    }
+
+    Rectangle<T> *bounds() {
+        return _bounds;
     }
 };

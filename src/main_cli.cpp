@@ -7,7 +7,7 @@ int main() {
     auto world = new BallSimulator::World(1024, 1024);
     for (auto i = 1; i <= 20; i++) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        world->entities().push_back(ball);
+        world->add(ball);
     }
 
     while (true) {
