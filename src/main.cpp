@@ -81,7 +81,15 @@ void render() {
     auto micros = glTime * 1000 * 1000;
     auto timeHasPassed = micros - lastFrameTime;
     auto divisor = float(timeHasPassed) / 1000.0f;
+    auto start = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+    ).count();
     world->tick(divisor);
+    auto end = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+    auto took = (end - start) / 1000 / 1000;
+    // std::cout << "Physics took " << took << " ms" << std::endl;
     lastFrameTime = micros;
 
     glClear(GL_COLOR_BUFFER_BIT);

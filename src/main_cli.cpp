@@ -10,9 +10,8 @@ int main() {
         world->add(ball);
     }
 
-    while (true) {
-        world->tick(5 / 1000.0f);
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    for (auto i = 1; i <= 1000000; i++) {
+        world->tick(0.01f);
     }
 
     return 0;
