@@ -1,4 +1,4 @@
-#include "Simulator.h"
+#include "simulator.h"
 
 #include <thread>
 #include <chrono>

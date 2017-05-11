@@ -1,4 +1,4 @@
-#include "Simulator.h"
+#include "simulator.h"
 
 #include <iostream>
 #include <chrono>
@@ -67,7 +67,7 @@ void render() {
     lastFrameTime = micros;
 
     glClear(GL_COLOR_BUFFER_BIT);
-    auto entities = &world->entities();
+    auto entities = world->entities();
     for (auto it = entities->begin(); it != entities->end(); it++) {
         auto ball = (BallSimulator::Ball*) *it;
         auto pos = ball->position();
@@ -109,7 +109,7 @@ void mouse(GLFWwindow *window, int button, int action, int mods) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
         ball->position().set(float(x), float(y));
         ball->velocity().set(10.0f, 10.0f);
-        world->entities().push_back(ball);
+        world->entities()->push_back(ball);
     }
 }
 
@@ -123,9 +123,9 @@ int main(int argc, char **argv) {
     srand((unsigned int) std::chrono::duration_cast<std::chrono::seconds>
                        (std::chrono::system_clock::now().time_since_epoch()).count());
     world = new BallSimulator::World(1024, 1024);
-    for (auto i = 1; i <= 20; i++) {
+    for (auto i = 1; i <= 5; i++) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        world->entities().push_back(ball);
+        world->entities()->push_back(ball);
     }
     world->scatter();
 

@@ -65,7 +65,8 @@ namespace BallSimulator {
 
         void scatter();
         void tick(float divisor);
+        void add(Ball* ball);
 
-        std::vector<Ball*>& entities();
+        std::vector<Ball*> *entities();
     };
 }

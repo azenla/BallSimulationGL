@@ -1,4 +1,5 @@
-#include "Simulator.h"
+#include "simulator.h"
+#include "config.h"
 
 #include <random>
 #include <iostream>
@@ -48,21 +49,20 @@ namespace BallSimulator {
         return _gravity;
     }
 
-    std::vector<Ball*>& World::entities() {
-        return *_entities;
+    std::vector<Ball*>* World::entities() {
+        return _entities;
     }
 
-    void World::check_collisions(float divisor) {
-        for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto ball = (Ball*) *it;
-            ball->apply_gravity(*this, divisor);
-            ball->apply_velocity(divisor);
-        }
+    void World::add(Ball *ball) {
+        _entities->push_back(ball);
+    }
 
-        auto worldBounds = new Rectangle<Ball*>(0, 0, width(), height());
+    static void DoQuadtreeCollisionDetection(World *world) {
+        auto worldBounds = new Rectangle<Ball*>(0, 0, world->width(), world->height());
         Quadtree<Ball*, 5, 3> quadtree(0, worldBounds);
 
-        for (auto it = _entities->begin(); it != _entities->end(); it++) {
+        auto entities = world->entities();
+        for (auto it = entities->begin(); it != entities->end(); it++) {
             quadtree.insert(new Rectangle<Ball*>(((Ball*) *it)->rect()));
         }
 
@@ -71,6 +71,8 @@ namespace BallSimulator {
             auto rect = (Rectangle<Ball*>*) *it;
             auto ballA = rect->value;
             quadtree.retrieve(&queued, rect);
+
+            std::cerr << "Size of Quadtree Queue: " << queued.size() << std::endl;
 
             auto colliding = false;
             for (auto bb = queued.begin(); bb != queued.end(); bb++) {
@@ -86,21 +88,34 @@ namespace BallSimulator {
 
             queued.clear();
         }
+    }
 
-//        for (unsigned long i = 0; i < _entities->size(); i++) {
-//            auto b = _entities->at(i);
-//            auto colliding = false;
-//
-//            for (auto j = i + 1; j < _entities->size(); j++) {
-//                auto bb = _entities->at(j);
-//                if (b->collides(*bb)) {
-//                    colliding = true;
-//                    b->collide(*bb);
-//                }
-//            }
-//
-//            b->isInsideCollision = colliding;
-//        }
+    static void DoSimpleCollisionDetection(World *world) {
+        auto entities = world->entities();
+        for (unsigned long i = 0; i < entities->size(); i++) {
+            auto b = entities->at(i);
+            auto colliding = false;
+
+            for (auto j = i + 1; j < entities->size(); j++) {
+                auto bb = entities->at(j);
+                if (b->collides(*bb)) {
+                    colliding = true;
+                    b->collide(*bb);
+                }
+            }
+
+            b->isInsideCollision = colliding;
+        }
+    }
+
+    void World::check_collisions(float divisor) {
+        for (auto it = _entities->begin(); it != _entities->end(); it++) {
+            auto ball = (Ball*) *it;
+            ball->apply_gravity(*this, divisor);
+            ball->apply_velocity(divisor);
+        }
+
+        DoQuadtreeCollisionDetection(this);
 
         for (auto it = _entities->begin(); it != _entities->end(); it++) {
             auto ball = (Ball*) *it;
@@ -215,7 +230,7 @@ namespace BallSimulator {
         }
 
         auto impulseFactor = -(velocityNumber / inverseMassTotal);
-        auto impulse = minimumTranslationDistance.normalize() * impulseFactor;
+        auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULT_FACTOR;
 
         auto deltaVelocityA = impulse * inverseMassA;
         auto deltaVelocityB = -(impulse * inverseMassB);
@@ -253,7 +268,7 @@ namespace BallSimulator {
     }
 
     void Ball::check_world_boundary(World &world) {
-        auto r2 = radius() * 2;
+        auto r2 = radius();
         auto vel = _velocity;
         auto pos = _position;
 
