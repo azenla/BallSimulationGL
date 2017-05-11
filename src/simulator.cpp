@@ -78,13 +78,18 @@ namespace BallSimulator {
         tree->clear();
 
         auto entities = world->entities();
+        auto i = 0;
+        auto array = new Rectangle<Ball*>*[entities->size()];
         for (auto it = entities->begin(); it != entities->end(); it++) {
-            tree->insert(new Rectangle<Ball*>(((Ball*) *it)->rect()));
+            auto rect = new Rectangle<Ball*>(((Ball*) *it)->rect());
+            tree->insert(rect);
+            array[i] = rect;
+            i++;
         }
 
         std::vector<Rectangle<Ball*>*> queued;
-        for (auto it = tree->objects()->begin(); it != tree->objects()->end(); it++) {
-            auto rect = (Rectangle<Ball*>*) *it;
+        for (i = 0; i < entities->size(); i++) {
+            auto rect = array[i];
             auto ballA = rect->value;
             tree->retrieve(&queued, rect);
 
@@ -102,6 +107,8 @@ namespace BallSimulator {
 
             queued.clear();
         }
+
+        delete[](array);
     }
 
     static void DoSimpleCollisionDetection(World *world) {
