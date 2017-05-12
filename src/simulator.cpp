@@ -97,7 +97,6 @@ namespace BallSimulator {
             i++;
         }
 
-
         std::vector<Rectangle<Ball*>*> queued;
         for (i = 0; i < entities->size(); i++) {
             auto rect = array[i];
@@ -108,13 +107,15 @@ namespace BallSimulator {
             for (auto bb = queued.begin(); bb != queued.end(); ++bb) {
                 auto ballB = (*bb)->value;
 
-                if (ballB && ballA->collides(*ballB)) {
+                if (ballB && ballB != ballA && ballA->collides(*ballB)) {
                     ballA->collide(*ballB);
                     colliding = true;
                 }
             }
 
             ballA->isInsideCollision = colliding;
+
+            ballA->check_world_boundary(*world);
 
             queued.clear();
         }
@@ -142,16 +143,12 @@ namespace BallSimulator {
             }
 
             b->isInsideCollision = colliding;
+            b->check_world_boundary(*world);
         }
     }
 
     void World::check_collisions(float divisor) {
         DoQuadtreeCollisionDetection(this, divisor);
-
-        for (auto it = _entities->begin(); it != _entities->end(); ++it) {
-            auto ball = *it;
-            ball->check_world_boundary(*this);
-        }
     }
 
     void World::tick(float divisor) {
@@ -201,7 +198,6 @@ namespace BallSimulator {
         _rect->x = x;
         _rect->y = y;
     }
-
 
     Rectangle<Ball*>* Ball::rect() const {
         return _rect;
@@ -258,11 +254,12 @@ namespace BallSimulator {
             return;
         }
 
-        auto impulseFactor = -(velocityNumber / inverseMassTotal);
+        auto impulseFactor = -velocityNumber / inverseMassTotal;
         auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
 
         auto deltaVelocityA = impulse * inverseMassA;
         auto deltaVelocityB = -(impulse * inverseMassB);
+
         auto targetVelocityA = velocity() + deltaVelocityA;
         auto targetVelocityB = other.velocity() + deltaVelocityB;
 

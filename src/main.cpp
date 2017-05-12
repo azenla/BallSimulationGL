@@ -76,7 +76,7 @@ void render() {
 
     auto micros = glTime * 1000 * 1000;
     auto timeHasPassed = micros - lastFrameTime;
-    auto divisor = float(timeHasPassed) / 1000.0f;
+    auto divisor = float(timeHasPassed) / 1000.0f / 2;
     world->tick(divisor);
     lastFrameTime = micros;
 
@@ -139,10 +139,14 @@ int main(int argc, char** argv) {
     srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
         (std::chrono::system_clock::now().time_since_epoch()).count()));
     world = new BallSimulator::World(1024, 1024);
+    world->change_gravity(0.0f);
+    auto state = 100.0f;
     for (auto i = 1; i <= 200; i++) {
-        auto ball = new BallSimulator::Ball(3.0f, 6.0f);
-        ball->velocity().set(5.0f, 5.0f);
+        auto ball = new BallSimulator::Ball(3.0f * rand(), 6.0f);
+        auto stateNegate = -state;
+        ball->velocity().set(state, stateNegate);
         world->add(ball);
+        state = -state;
     }
     world->scatter();
 

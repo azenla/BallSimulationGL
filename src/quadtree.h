@@ -100,20 +100,8 @@ class Quadtree {
     }
 
     void append_our_objects(std::vector<Rectangle<T>*>* objects) {
-        if (objects->empty()) {
-            (*objects) = *_objects;
-        } else {
-            auto end = _objects->end();
-            for (auto it = _objects->begin(); it != end; ++it) {
-                auto rectangle = *it;
-                objects->push_back(rectangle);
-            }
-        }
-
-        for (auto it = _stuck->begin(); it != _stuck->end(); ++it) {
-            auto rectangle = *it;
-            objects->push_back(rectangle);
-        }
+        objects->insert(objects->end(), _objects->begin(), _objects->end());
+        objects->insert(objects->end(), _stuck->begin(), _stuck->end());
     }
 
 public:
@@ -206,7 +194,7 @@ public:
                 node->retrieve(objects, item);
             } else {
                 if (item->x <= _nodes[NODE_TOP_RIGHT]->_bounds->x) {
-                    if (item->y <= _nodes[NODE_BOTTOM_LEFT]->_bounds->x) {
+                    if (item->y <= _nodes[NODE_BOTTOM_LEFT]->_bounds->y) {
                         _nodes[NODE_TOP_LEFT]->append_our_objects(objects);
                     }
 
