@@ -17,7 +17,7 @@ static const float CircleMagicConstant = TwicePi / TriangleAmount;
 static float CircleDrawingCacheCos[GL_DRAW_CIRCLE_TRIANGLE_AMOUNT + 1] = {};
 static float CircleDrawingCacheSin[GL_DRAW_CIRCLE_TRIANGLE_AMOUNT + 1] = {};
 
-static void fulfillDrawingCache() {
+static void fulfill_drawing_cache() {
     for (auto i = 0; i <= TriangleAmount; i++) {
         CircleDrawingCacheCos[i] = cos(i * CircleMagicConstant);
     }
@@ -27,7 +27,7 @@ static void fulfillDrawingCache() {
     }
 }
 
-void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
+void draw_filled_circle(GLfloat x, GLfloat y, GLfloat radius) {
     glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y);
     for (auto i = 0; i <= TriangleAmount; i++) {
@@ -39,7 +39,7 @@ void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
     glEnd();
 }
 
-void drawUnfilledRect(float x1, float y1, float x2, float y2) {
+void draw_unfilled_rect(float x1, float y1, float x2, float y2) {
     glBegin(GL_LINE_LOOP);
     glVertex2f(x1, y1);
     glVertex2f(x2, y1);
@@ -57,9 +57,9 @@ void render_quadtree_bounds(BallSimulator::CollisionQuadtree* tree) {
     auto bounds = tree->bounds();
 
     glColor3f(0.0f, 0.0f, 1.0f);
-    drawUnfilledRect(bounds->x, bounds->y, bounds->x + bounds->w, bounds->y + bounds->h);
+    draw_unfilled_rect(bounds->x, bounds->y, bounds->x + bounds->w, bounds->y + bounds->h);
 
-    tree->forEachNode(render_quadtree_bounds);
+    tree->for_each_node(render_quadtree_bounds);
 }
 
 void render() {
@@ -90,7 +90,7 @@ void render() {
         } else {
             glColor3f(1.0, 0.0, 0.0);
         }
-        drawFilledCircle(pos.x, pos.y, ball->radius());
+        draw_filled_circle(pos.x, pos.y, ball->radius());
     }
 
     render_quadtree_bounds(world->quadtree());
@@ -134,13 +134,14 @@ void handle_error(int code, const char* msg) {
 }
 
 int main(int argc, char** argv) {
-    fulfillDrawingCache();
+    fulfill_drawing_cache();
 
     srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
         (std::chrono::system_clock::now().time_since_epoch()).count()));
     world = new BallSimulator::World(1024, 1024);
-    for (auto i = 1; i <= 5; i++) {
-        auto ball = new BallSimulator::Ball(5.0f, 20.0f);
+    for (auto i = 1; i <= 200; i++) {
+        auto ball = new BallSimulator::Ball(3.0f, 6.0f);
+        ball->velocity().set(5.0f, 5.0f);
         world->add(ball);
     }
     world->scatter();

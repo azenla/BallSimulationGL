@@ -21,6 +21,7 @@ namespace BallSimulator {
         float _radius;
         vec2f* _position;
         vec2f* _velocity;
+        Rectangle<Ball*>* _rect;
 
     public:
         bool isInsideCollision = false;
@@ -35,7 +36,7 @@ namespace BallSimulator {
         vec2f& position() const;
         vec2f& velocity() const;
 
-        Rectangle<Ball*> rect();
+        Rectangle<Ball*>* rect() const;
 
         bool collides(Ball& other) const;
         void collide(Ball& other) const;
@@ -43,6 +44,7 @@ namespace BallSimulator {
         void apply_gravity(World& world, float divisor) const;
         void apply_velocity(float divisor) const;
         void check_world_boundary(World& world) const;
+        void set_position(float x, float y) const;
     };
 
     typedef Quadtree<Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> CollisionQuadtree;
