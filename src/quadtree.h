@@ -26,8 +26,7 @@ struct Rectangle {
 
 template <typename T, int MaxObjects, int MaxLevels>
 class Quadtree {
-private:
-    std::vector<Rectangle<T>*> *_objects;
+	std::vector<Rectangle<T>*> *_objects;
     Quadtree *_nodes[4] = {nullptr, nullptr, nullptr, nullptr};
     int _level;
     Rectangle<T> *_bounds;

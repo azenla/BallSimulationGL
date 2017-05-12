@@ -30,14 +30,12 @@ static void fulfillDrawingCache() {
 }
 
 void drawFilledCircle(GLfloat x, GLfloat y, GLfloat radius) {
-    int i;
-
-    glBegin(GL_TRIANGLE_FAN);
+	glBegin(GL_TRIANGLE_FAN);
     glVertex2f(x, y);
-    for(i = 0; i <= TriangleAmount; i++) {
+    for(auto i = 0; i <= TriangleAmount; i++) {
         glVertex2f(
-                (GLfloat) (x + (radius * CircleDrawingCacheCos[i])),
-                (GLfloat) (y + (radius * CircleDrawingCacheSin[i]))
+                static_cast<GLfloat>(x + radius * CircleDrawingCacheCos[i]),
+                static_cast<GLfloat>(y + (radius * CircleDrawingCacheSin[i]))
         );
     }
     glEnd();
@@ -57,7 +55,7 @@ int frames = 0;
 double fps = 60.0;
 double lastFrameTime = 0.0;
 
-void render_quadtree_bounds(Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> *tree) {
+void render_quadtree_bounds(BallSimulator::CollisionQuadtree *tree) {
     auto bounds = tree->bounds();
 
     glColor3f(0.0f, 0.0f, 1.0f);
@@ -69,7 +67,7 @@ void render_quadtree_bounds(Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS,
 void render() {
     frames++;
     auto glTime = glfwGetTime();
-    auto elapsed = (int) (glTime * 1000);
+    auto elapsed = static_cast<int>(glTime * 1000);
 
     if (elapsed - lastTimeBase > 1000) {
         fps = frames * 1000.0 / (elapsed - lastTimeBase);
@@ -81,21 +79,13 @@ void render() {
     auto micros = glTime * 1000 * 1000;
     auto timeHasPassed = micros - lastFrameTime;
     auto divisor = float(timeHasPassed) / 1000.0f;
-    auto start = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::system_clock::now().time_since_epoch()
-    ).count();
     world->tick(divisor);
-    auto end = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::system_clock::now().time_since_epoch()
-    ).count();
-    auto took = (end - start) / 1000 / 1000;
-    // std::cout << "Physics took " << took << " ms" << std::endl;
     lastFrameTime = micros;
 
     glClear(GL_COLOR_BUFFER_BIT);
     auto entities = world->entities();
-    for (auto it = entities->begin(); it != entities->end(); it++) {
-        auto ball = (BallSimulator::Ball*) *it;
+    for (auto it = entities->begin(); it != entities->end(); ++it) {
+        auto ball = *it;
         auto pos = ball->position();
         if (ball->isInsideCollision) {
             glColor3f(1.0, 1.0, 0.0);
@@ -148,8 +138,8 @@ void handle_error(int code, const char *msg) {
 int main(int argc, char **argv) {
     fulfillDrawingCache();
 
-    srand((unsigned int) std::chrono::duration_cast<std::chrono::seconds>
-                       (std::chrono::system_clock::now().time_since_epoch()).count());
+    srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
+	    (std::chrono::system_clock::now().time_since_epoch()).count()));
     world = new BallSimulator::World(1024, 1024);
     for (auto i = 1; i <= 5; i++) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
@@ -161,11 +151,9 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    GLFWwindow *window;
+	glfwSetErrorCallback(handle_error);
 
-    glfwSetErrorCallback(handle_error);
-
-    window = glfwCreateWindow(1024, 1024, "Ball Simulation", nullptr, nullptr);
+	auto window = glfwCreateWindow(1024, 1024, "Ball Simulation", nullptr, nullptr);
     if (window == nullptr) {
         glfwTerminate();
         return 1;

@@ -30,48 +30,49 @@ namespace BallSimulator {
         Ball(float mass, float radius, vec2f& position, vec2f& velocity);
         ~Ball();
 
-        float mass();
-        float radius();
-        vec2f& position();
-        vec2f& velocity();
+        float mass() const;
+        float radius() const;
+        vec2f& position() const;
+        vec2f& velocity() const;
 
         Rectangle<Ball*> rect();
 
-        bool collides(Ball &other);
-        void collide(Ball &other);
+        bool collides(Ball &other) const;
+        void collide(Ball &other) const;
 
-        void apply_gravity(World& world, float divisor);
-        void apply_velocity(float divisor);
-        void check_world_boundary(World& world);
+        void apply_gravity(World& world, float divisor) const;
+        void apply_velocity(float divisor) const;
+        void check_world_boundary(World& world) const;
     };
 
+	typedef Quadtree<Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> CollisionQuadtree;
+
     class World {
-    private:
-        float _width;
+	    float _width;
         float _height;
         float _gravity;
         std::vector<Ball*> *_entities;
-        Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> *_quadtree;
+        CollisionQuadtree *_quadtree;
         Rectangle<Ball*> *_bounds;
 
     public:
         World(float width, float height);
         ~World();
-
-        float width();
-        float height();
-        float gravity();
+		
+        float width() const;
+        float height() const;
+        float gravity() const;
 
         void resize(float width, float height);
         void change_gravity(float gravity);
         void check_collisions(float divisor);
 
-        void scatter();
+        void scatter() const;
         void tick(float divisor);
-        void add(Ball* ball);
+        void add(Ball* ball) const;
 
-        std::vector<Ball*> *entities();
-        Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> *quadtree();
-        Rectangle<Ball*> *bounds();
+        std::vector<Ball*> *entities() const;
+		CollisionQuadtree *quadtree() const;
+        Rectangle<Ball*> *bounds() const;
     };
 }

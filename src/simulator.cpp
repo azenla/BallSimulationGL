@@ -8,7 +8,7 @@ namespace BallSimulator {
         _entities = new std::vector<Ball*>();
         _gravity = DefaultGravity;
         _bounds = new Rectangle<Ball*>(0.0f, 0.0f, width, height);
-        _quadtree = new Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS>(0, bounds());
+        _quadtree = new CollisionQuadtree(0, bounds());
     }
 
     World::~World() {
@@ -16,11 +16,11 @@ namespace BallSimulator {
         delete _quadtree;
     }
 
-    float World::width() {
+    float World::width() const {
         return _width;
     }
 
-    float World::height() {
+    float World::height() const {
         return _height;
     }
 
@@ -33,16 +33,16 @@ namespace BallSimulator {
 
         delete _quadtree;
 
-        _quadtree = new Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS>(0, bounds());
+        _quadtree = new CollisionQuadtree(0, bounds());
 
         scatter();
     }
 
-    void World::scatter() {
-        for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto x = std::rand() / (RAND_MAX / _width);
-            auto y = std::rand() / (RAND_MAX / _height);
-            auto ball = (Ball*) *it;
+    void World::scatter() const {
+        for (auto it = _entities->begin(); it != _entities->end(); ++it) {
+            auto x = rand() / (RAND_MAX / _width);
+            auto y = rand() / (RAND_MAX / _height);
+            auto ball = *it;
 
             ball->position().set(x, y);
         }
@@ -52,23 +52,23 @@ namespace BallSimulator {
         _gravity = gravity;
     }
 
-    float World::gravity() {
+    float World::gravity() const {
         return _gravity;
     }
 
-    std::vector<Ball*>* World::entities() {
+    std::vector<Ball*>* World::entities() const {
         return _entities;
     }
 
-    void World::add(Ball *ball) {
+    void World::add(Ball *ball) const {
         _entities->push_back(ball);
     }
 
-    Quadtree<BallSimulator::Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS>* World::quadtree() {
+    CollisionQuadtree* World::quadtree() const {
         return _quadtree;
     }
 
-    Rectangle<Ball*>* World::bounds() {
+    Rectangle<Ball*>* World::bounds() const {
         return _bounds;
     }
 
@@ -80,8 +80,8 @@ namespace BallSimulator {
         auto entities = world->entities();
         auto i = 0;
         auto array = new Rectangle<Ball*>*[entities->size()];
-        for (auto it = entities->begin(); it != entities->end(); it++) {
-            auto rect = new Rectangle<Ball*>(((Ball*) *it)->rect());
+        for (auto it = entities->begin(); it != entities->end(); ++it) {
+            auto rect = new Rectangle<Ball*>((*it)->rect());
             tree->insert(rect);
             array[i] = rect;
             i++;
@@ -94,8 +94,8 @@ namespace BallSimulator {
             tree->retrieve(&queued, rect);
 
             auto colliding = false;
-            for (auto bb = queued.begin(); bb != queued.end(); bb++) {
-                auto ballB = ((Rectangle<Ball*>*) *bb)->value;
+            for (auto bb = queued.begin(); bb != queued.end(); ++bb) {
+                auto ballB = (*bb)->value;
 
                 if (ballA->collides(*ballB)) {
                     ballA->collide(*ballB);
@@ -130,16 +130,16 @@ namespace BallSimulator {
     }
 
     void World::check_collisions(float divisor) {
-        for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto ball = (Ball*) *it;
+        for (auto it = _entities->begin(); it != _entities->end(); ++it) {
+            auto ball = *it;
             ball->apply_gravity(*this, divisor);
             ball->apply_velocity(divisor);
         }
 
         DoQuadtreeCollisionDetection(this);
 
-        for (auto it = _entities->begin(); it != _entities->end(); it++) {
-            auto ball = (Ball*) *it;
+        for (auto it = _entities->begin(); it != _entities->end(); ++it) {
+            auto ball = *it;
             ball->check_world_boundary(*this);
         }
     }
@@ -174,11 +174,11 @@ namespace BallSimulator {
         delete _velocity;
     }
 
-    float Ball::radius() {
+    float Ball::radius() const {
         return _radius;
     }
 
-    float Ball::mass() {
+    float Ball::mass() const {
         return _mass;
     }
 
@@ -197,48 +197,46 @@ namespace BallSimulator {
         return rect;
     }
 
-    vec2f& Ball::position() {
+    vec2f& Ball::position() const {
         return *_position;
     }
 
-    vec2f& Ball::velocity() {
+    vec2f& Ball::velocity() const {
         return *_velocity;
     }
 
-    bool Ball::collides(Ball &other) {
+    bool Ball::collides(Ball &other) const {
         auto diffX = position().x - other.position().x;
         auto diffY = position().y - other.position().y;
         auto totalRadius = radius() + other.radius();
         auto radiusSquared = totalRadius * totalRadius;
         auto distanceSquared = diffX * diffX + diffY * diffY;
 
-        return (radiusSquared - distanceSquared) > Epsilon;
+        return radiusSquared - distanceSquared > Epsilon;
     }
 
-    void Ball::collide(Ball &other) {
+    void Ball::collide(Ball &other) const {
         auto totalRadius = radius() + other.radius();
         auto delta = position() - other.position();
         auto distance = delta.length();
 
-        if (std::abs(totalRadius * totalRadius - vec2f::dot(delta, delta)) < Epsilon) {
+        if (abs(totalRadius * totalRadius - vec2f::dot(delta, delta)) < Epsilon) {
             return;
         }
 
-        vec2f minimumTranslationDistance;
-
-        auto isOnTopOfEachOther = std::abs(distance) <= Epsilon;
+	    auto isOnTopOfEachOther = abs(distance) <= Epsilon;
         if (isOnTopOfEachOther) {
             distance = other.radius() + radius() - 1.0f;
             delta.set(other.radius() + radius(), 0.0f);
         }
-        minimumTranslationDistance = delta * ((radius() + other.radius() - distance) / distance);
+        vec2f minimumTranslationDistance = delta * ((radius() + other.radius() - distance) / distance);
 
         auto inverseMassA = 1.0f / mass();
         auto inverseMassB = 1.0f / other.mass();
         auto inverseMassTotal = inverseMassA + inverseMassB;
 
-        auto targetPositionA = position() + (minimumTranslationDistance * (inverseMassA / inverseMassTotal));
-        auto targetPositionB = other.position() - (minimumTranslationDistance * (inverseMassB / inverseMassTotal));
+        auto targetPositionA = position() + minimumTranslationDistance * (inverseMassA / inverseMassTotal);
+        auto targetPositionB = other.position() - minimumTranslationDistance * (inverseMassB / inverseMassTotal);
 
         auto impactSpeed = velocity() - other.velocity();
         auto velocityNumber = vec2f::dot(impactSpeed, minimumTranslationDistance.normalize());
@@ -251,7 +249,7 @@ namespace BallSimulator {
         }
 
         auto impulseFactor = -(velocityNumber / inverseMassTotal);
-        auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULT_FACTOR;
+        auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
 
         auto deltaVelocityA = impulse * inverseMassA;
         auto deltaVelocityB = -(impulse * inverseMassB);
@@ -262,14 +260,14 @@ namespace BallSimulator {
         other.velocity().set(targetVelocityB);
     }
 
-    void Ball::apply_gravity(World &world, float divisor) {
-        if (std::abs(world.gravity()) > Epsilon) {
+    void Ball::apply_gravity(World &world, float divisor) const {
+        if (abs(world.gravity()) > Epsilon) {
             auto vel = _velocity;
             vel->y = vel->y + world.gravity() / divisor;
         }
     }
 
-    void Ball::apply_velocity(float divisor) {
+    void Ball::apply_velocity(float divisor) const {
         auto vel = _velocity;
         auto pos = _position;
 
@@ -288,25 +286,25 @@ namespace BallSimulator {
         }
     }
 
-    void Ball::check_world_boundary(World &world) {
+    void Ball::check_world_boundary(World &world) const {
         auto r2 = radius();
         auto vel = _velocity;
         auto pos = _position;
 
         if (pos->x - r2 < Epsilon) {
             pos->x = r2;
-            vel->x = -(vel->x);
+            vel->x = -vel->x;
         } else if (pos->x + r2 > world.width()) {
             pos->x = world.width() - r2;
-            vel->x = -(vel->x);
+            vel->x = -vel->x;
         }
 
         if (pos->y - r2 < Epsilon) {
             pos->y = r2;
-            vel->y = -(vel->y);
+            vel->y = -vel->y;
         } else if (pos->y + r2 > world.height()) {
             pos->y = world.height() - r2;
-            vel->y = -(vel->y);
+            vel->y = -vel->y;
         }
     }
 }
