@@ -60,7 +60,7 @@ namespace BallSimulator {
         return _entities;
     }
 
-    void World::add(Ball *ball) const {
+    void World::add(Ball* ball) const {
         _entities->push_back(ball);
     }
 
@@ -72,7 +72,7 @@ namespace BallSimulator {
         return _bounds;
     }
 
-    static void DoQuadtreeCollisionDetection(World *world) {
+    static void DoQuadtreeCollisionDetection(World* world) {
         auto tree = world->quadtree();
 
         tree->clear();
@@ -111,7 +111,7 @@ namespace BallSimulator {
         delete[](array);
     }
 
-    static void DoSimpleCollisionDetection(World *world) {
+    static void DoSimpleCollisionDetection(World* world) {
         auto entities = world->entities();
         for (unsigned long i = 0; i < entities->size(); i++) {
             auto b = entities->at(i);
@@ -205,7 +205,7 @@ namespace BallSimulator {
         return *_velocity;
     }
 
-    bool Ball::collides(Ball &other) const {
+    bool Ball::collides(Ball& other) const {
         auto diffX = position().x - other.position().x;
         auto diffY = position().y - other.position().y;
         auto totalRadius = radius() + other.radius();
@@ -215,7 +215,7 @@ namespace BallSimulator {
         return radiusSquared - distanceSquared > Epsilon;
     }
 
-    void Ball::collide(Ball &other) const {
+    void Ball::collide(Ball& other) const {
         auto totalRadius = radius() + other.radius();
         auto delta = position() - other.position();
         auto distance = delta.length();
@@ -224,7 +224,7 @@ namespace BallSimulator {
             return;
         }
 
-	    auto isOnTopOfEachOther = abs(distance) <= Epsilon;
+        auto isOnTopOfEachOther = abs(distance) <= Epsilon;
         if (isOnTopOfEachOther) {
             distance = other.radius() + radius() - 1.0f;
             delta.set(other.radius() + radius(), 0.0f);
@@ -260,7 +260,7 @@ namespace BallSimulator {
         other.velocity().set(targetVelocityB);
     }
 
-    void Ball::apply_gravity(World &world, float divisor) const {
+    void Ball::apply_gravity(World& world, float divisor) const {
         if (abs(world.gravity()) > Epsilon) {
             auto vel = _velocity;
             vel->y = vel->y + world.gravity() / divisor;
@@ -271,14 +271,14 @@ namespace BallSimulator {
         auto vel = _velocity;
         auto pos = _position;
 
-        if (std::abs(vel->x) < Epsilon) {
+        if (abs(vel->x) < Epsilon) {
             vel->x = 0.0f;
         } else {
             auto delta = vel->x / divisor;
             pos->x += delta;
         }
 
-        if (std::abs(vel->y) < Epsilon) {
+        if (abs(vel->y) < Epsilon) {
             vel->y = 0.0f;
         } else {
             auto delta = vel->y / divisor;
@@ -286,7 +286,7 @@ namespace BallSimulator {
         }
     }
 
-    void Ball::check_world_boundary(World &world) const {
+    void Ball::check_world_boundary(World& world) const {
         auto r2 = radius();
         auto vel = _velocity;
         auto pos = _position;

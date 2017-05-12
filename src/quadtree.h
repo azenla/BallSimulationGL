@@ -26,10 +26,10 @@ struct Rectangle {
 
 template <typename T, int MaxObjects, int MaxLevels>
 class Quadtree {
-	std::vector<Rectangle<T>*> *_objects;
-    Quadtree *_nodes[4] = {nullptr, nullptr, nullptr, nullptr};
+    std::vector<Rectangle<T>*>* _objects;
+    Quadtree* _nodes[4] = {nullptr, nullptr, nullptr, nullptr};
     int _level;
-    Rectangle<T> *_bounds;
+    Rectangle<T>* _bounds;
 
     void split() {
         auto subWidth = _bounds->w / 2.0f;
@@ -38,23 +38,23 @@ class Quadtree {
         auto y = _bounds->y;
 
         _nodes[0] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
-                x + subWidth, y, subWidth, subHeight
+            x + subWidth, y, subWidth, subHeight
         });
 
         _nodes[1] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
-                x, y, subWidth, subHeight
+            x, y, subWidth, subHeight
         });
 
         _nodes[2] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
-                x, y + subHeight, subWidth, subHeight
+            x, y + subHeight, subWidth, subHeight
         });
 
         _nodes[3] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
-                x + subWidth, y + subHeight, subWidth, subHeight
+            x + subWidth, y + subHeight, subWidth, subHeight
         });
     }
 
-    int getIndex(Rectangle<T> *rect) {
+    int getIndex(Rectangle<T>* rect) {
         auto idx = -1;
         auto verticalMidpoint = _bounds->x + (_bounds->w / 2.0f);
         auto horizontalMidpoint = _bounds->y + (_bounds->h / 2.0f);
@@ -79,7 +79,7 @@ class Quadtree {
     }
 
 public:
-    Quadtree(int level, Rectangle<T> *bounds) {
+    Quadtree(int level, Rectangle<T>* bounds) {
         _level = level;
         _bounds = bounds;
         _objects = new std::vector<Rectangle<T>*>();
@@ -108,7 +108,7 @@ public:
         }
     }
 
-    void insert(Rectangle<T> *rect) {
+    void insert(Rectangle<T>* rect) {
         if (_nodes[0] != nullptr) {
             auto idx = getIndex(rect);
             if (idx != -1 && _nodes[idx] != nullptr) {
@@ -137,23 +137,23 @@ public:
         }
     }
 
-    void retrieve(std::vector<Rectangle<T>*> *objects, Rectangle<T> *rect) {
+    void retrieve(std::vector<Rectangle<T>*>* objects, Rectangle<T>* rect) {
         auto idx = getIndex(rect);
         if (idx != -1 && _nodes[idx] != nullptr) {
             _nodes[idx]->retrieve(objects, rect);
         }
 
         for (auto it = _objects->begin(); it != _objects->end(); it++) {
-            auto rectangle = (Rectangle<T>*) *it;
+            auto rectangle = *it;
             objects->push_back(rectangle);
         }
     }
 
-    std::vector<Rectangle<T> *> *objects() {
+    std::vector<Rectangle<T> *>* objects() {
         return _objects;
     }
 
-    void forEachNode(void func(Quadtree<T, MaxObjects, MaxLevels> *tree)) {
+    void forEachNode(void func(Quadtree<T, MaxObjects, MaxLevels>* tree)) {
         for (auto i = 0; i < 4; i++) {
             if (_nodes[i] != nullptr) {
                 func(_nodes[i]);
@@ -161,7 +161,7 @@ public:
         }
     }
 
-    Rectangle<T> *bounds() {
+    Rectangle<T>* bounds() {
         return _bounds;
     }
 };

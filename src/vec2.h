@@ -3,29 +3,33 @@
 #include <string>
 #include <cmath>
 
-template <class T> class vec2 {
+template <class T>
+class vec2 {
 public:
     T x, y;
 
-    vec2() : x(0), y(0) {}
+    vec2() : x(0), y(0) {
+    }
 
-    vec2(T x, T y) : x(x), y(y) {}
+    vec2(T x, T y) : x(x), y(y) {
+    }
 
-    vec2(const vec2<T> &v) : x(v.x), y(v.y) {}
+    vec2(const vec2<T>& v) : x(v.x), y(v.y) {
+    }
 
-    vec2<T> &operator =(const vec2<T> &v) {
+    vec2<T>& operator =(const vec2<T>& v) {
         x = v.x;
         y = v.y;
         return *this;
     }
 
-    vec2<T> &operator +=(vec2<T> &v) {
+    vec2<T>& operator +=(vec2<T>& v) {
         x += v.x;
         y += v.y;
         return *this;
     }
 
-    vec2<T> &operator -=(vec2<T> &v) {
+    vec2<T>& operator -=(vec2<T>& v) {
         x -= v.x;
         y -= v.y;
         return *this;
@@ -35,35 +39,57 @@ public:
         return vec2<T>(-x, -y);
     }
 
-    vec2<T> operator +(vec2<T> v) { return vec2<T>(x + v.x, y + v.y); }
-    vec2<T> operator -(vec2<T> v) { return vec2<T>(x - v.x, y - v.y); }
-    vec2<T> operator /(vec2<T> v) { return vec2<T>(x / v.x, y / v.y); }
-    vec2<T> operator *(vec2<T> v) { return vec2<T>(x * v.x, y * v.y); }
+    vec2<T> operator +(vec2<T> v) {
+        return vec2<T>(x + v.x, y + v.y);
+    }
 
-    vec2<T> operator +(T s) { return vec2<T>(x + s, y + s); }
-    vec2<T> operator -(T s) { return vec2<T>(x - s, y - s); }
-    vec2<T> operator *(T s) { return vec2<T>(x * s, y * s); }
-    vec2<T> operator /(T s) { return vec2<T>(x / s, y / s); }
+    vec2<T> operator -(vec2<T> v) {
+        return vec2<T>(x - v.x, y - v.y);
+    }
 
-    vec2<T> &operator +=(T s) {
+    vec2<T> operator /(vec2<T> v) {
+        return vec2<T>(x / v.x, y / v.y);
+    }
+
+    vec2<T> operator *(vec2<T> v) {
+        return vec2<T>(x * v.x, y * v.y);
+    }
+
+    vec2<T> operator +(T s) {
+        return vec2<T>(x + s, y + s);
+    }
+
+    vec2<T> operator -(T s) {
+        return vec2<T>(x - s, y - s);
+    }
+
+    vec2<T> operator *(T s) {
+        return vec2<T>(x * s, y * s);
+    }
+
+    vec2<T> operator /(T s) {
+        return vec2<T>(x / s, y / s);
+    }
+
+    vec2<T>& operator +=(T s) {
         x += s;
         y += s;
         return *this;
     }
 
-    vec2<T> &operator -=(T s) {
+    vec2<T>& operator -=(T s) {
         x -= s;
         y -= s;
         return *this;
     }
 
-    vec2<T> &operator *=(T s) {
+    vec2<T>& operator *=(T s) {
         x *= s;
         y *= s;
         return *this;
     }
 
-    vec2<T> &operator /=(T s) {
+    vec2<T>& operator /=(T s) {
         x /= s;
         y /= s;
         return *this;
@@ -96,7 +122,9 @@ public:
         return d.length();
     }
 
-    float length() const { return std::sqrt(x * x + y * y); }
+    float length() const {
+        return std::sqrt(x * x + y * y);
+    }
 
     void truncate(double length) {
         double angle = atan2f(y, x);
@@ -104,11 +132,17 @@ public:
         y = length * sin(angle);
     }
 
-    vec2<T> ortho() const { return vec2<T>(y, -x); }
+    vec2<T> ortho() const {
+        return vec2<T>(y, -x);
+    }
 
-    static T dot(vec2<T> v1, vec2<T> v2) { return v1.x * v2.x + v1.y * v2.y; }
+    static T dot(vec2<T> v1, vec2<T> v2) {
+        return v1.x * v2.x + v1.y * v2.y;
+    }
 
-    static T cross(vec2<T> v1, vec2<T> v2) { return (v1.x * v2.y) - (v1.y * v2.x); }
+    static T cross(vec2<T> v1, vec2<T> v2) {
+        return (v1.x * v2.y) - (v1.y * v2.x);
+    }
 
     std::string str() {
         return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";

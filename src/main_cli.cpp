@@ -14,7 +14,7 @@ int main() {
         world->tick(0.01f);
     }
 
-	delete world;
+    delete world;
 
     return 0;
 }
