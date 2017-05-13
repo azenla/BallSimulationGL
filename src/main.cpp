@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
         (std::chrono::system_clock::now().time_since_epoch()).count()));
     world = new BallSimulator::World(1024, 1024);
     world->change_gravity(0.0f);
-    auto state = 100.0f;
+    auto state = 10.0f;
     for (auto i = 1; i <= 200; i++) {
         auto ball = new BallSimulator::Ball(3.0f * rand(), 6.0f);
         auto stateNegate = -state;

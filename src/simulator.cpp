@@ -244,17 +244,17 @@ namespace BallSimulator {
         auto targetPositionA = position() + minimumTranslationDistance * (inverseMassA / inverseMassTotal);
         auto targetPositionB = other.position() - minimumTranslationDistance * (inverseMassB / inverseMassTotal);
 
-        auto impactSpeed = velocity() - other.velocity();
-        auto velocityNumber = vec2f::dot(impactSpeed, minimumTranslationDistance.normalize());
-
         set_position(targetPositionA.x, targetPositionA.y);
         other.set_position(targetPositionB.x, targetPositionB.y);
 
-        if (velocityNumber > Epsilon) {
+        auto impactSpeed = velocity() - other.velocity();
+        auto velocityNumber = vec2f::dot(impactSpeed, minimumTranslationDistance.normalize());
+
+        if (velocityNumber > 0.0f) {
             return;
         }
 
-        auto impulseFactor = -velocityNumber / inverseMassTotal;
+        auto impulseFactor = -2.0f * velocityNumber / inverseMassTotal;
         auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
 
         auto deltaVelocityA = impulse * inverseMassA;

@@ -136,16 +136,26 @@ public:
         return vec2<T>(y, -x);
     }
 
+    vec2<T> transformAngular(float sin, float cos, bool reverse) {
+        return vec2<T>(
+            reverse
+            ? (x * cos  + y * sin)
+            : (x * cos  - y * sin),
+            reverse
+            ? (y * cos - x * sin)
+            : (y * cos + x * sin));
+    }
+
+    std::string str() {
+        return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
+    }
+
     static T dot(vec2<T> v1, vec2<T> v2) {
         return v1.x * v2.x + v1.y * v2.y;
     }
 
     static T cross(vec2<T> v1, vec2<T> v2) {
         return (v1.x * v2.y) - (v1.y * v2.x);
-    }
-
-    std::string str() {
-        return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
     }
 };
 
