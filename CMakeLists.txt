@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(BallSimulator)
+project(BallSimulator LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 11)
 

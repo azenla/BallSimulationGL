@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
     world->change_gravity(0.0f);
     auto state = 10.0f;
     for (auto i = 1; i <= 200; i++) {
-        auto ball = new BallSimulator::Ball(3.0f * rand(), 6.0f);
+        auto ball = new BallSimulator::Ball(3.0f, 10.0f);
         auto stateNegate = -state;
         ball->velocity().set(state, stateNegate);
         world->add(ball);

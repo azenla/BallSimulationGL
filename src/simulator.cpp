@@ -232,10 +232,10 @@ namespace BallSimulator {
 
         auto isOnTopOfEachOther = abs(distance) <= Epsilon;
         if (isOnTopOfEachOther) {
-            distance = other.radius() + radius() - 1.0f;
-            delta.set(other.radius() + radius(), 0.0f);
+            distance = totalRadius - 1.0f;
+            delta.set(totalRadius, 0.0f);
         }
-        auto minimumTranslationDistance = delta * ((radius() + other.radius() - distance) / distance);
+        auto minimumTranslationDistance = delta * ((totalRadius - distance) / distance);
 
         auto inverseMassA = 1.0f / mass();
         auto inverseMassB = 1.0f / other.mass();
@@ -258,10 +258,10 @@ namespace BallSimulator {
         auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
 
         auto deltaVelocityA = impulse * inverseMassA;
-        auto deltaVelocityB = -(impulse * inverseMassB);
+        auto deltaVelocityB = impulse * inverseMassB;
 
         auto targetVelocityA = velocity() + deltaVelocityA;
-        auto targetVelocityB = other.velocity() + deltaVelocityB;
+        auto targetVelocityB = other.velocity() - deltaVelocityB;
 
         velocity().set(targetVelocityA);
         other.velocity().set(targetVelocityB);
