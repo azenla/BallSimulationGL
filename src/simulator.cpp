@@ -12,8 +12,8 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float divisor) {
 
     const auto& entities = world.entities();
     auto i = 0;
-    auto count = entities.size();
-    std::vector<const Rectangle<Ball*>*> array(count);
+    static std::vector<const Rectangle<Ball*>*> array;
+    array.resize(entities.size());
     for (auto ball : entities) {
         ball->apply_gravity(world, divisor);
         ball->apply_velocity(divisor);
