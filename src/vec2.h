@@ -8,135 +8,175 @@ class vec2 {
 public:
     T x, y;
 
-    vec2() : x(0), y(0) {
-    }
+    vec2() : x(0), y(0) {}
 
-    vec2(T x, T y) : x(x), y(y) {
-    }
+    vec2(T x, T y) : x(x), y(y) {}
 
-    vec2(const vec2<T>& v) : x(v.x), y(v.y) {
-    }
+    vec2(const vec2<T>& v) : x(v.x), y(v.y) {}
 
-    vec2<T>& operator =(const vec2<T>& v) {
+    vec2(vec2<T>&& v) : x(v.x), y(v.y) {}
+
+    // constants
+
+    static constexpr vec2<T> zero() { return { static_cast<T>(0), static_cast<T>(0) }; }
+
+    // assignment
+
+    inline vec2<T>& operator =(vec2<T>& v) {
         x = v.x;
         y = v.y;
         return *this;
     }
 
-    vec2<T>& operator +=(vec2<T>& v) {
+    inline vec2<T>& operator =(const vec2<T>& v) {
+        x = v.x;
+        y = v.y;
+        return *this;
+    }
+
+    inline vec2<T>& operator =(vec2<T>&& v) {
+        x = v.x;
+        y = v.y;
+        return *this;
+    }
+
+    // compound vector arithmetic
+
+    inline vec2<T>& operator +=(const vec2<T>& v) {
         x += v.x;
         y += v.y;
         return *this;
     }
 
-    vec2<T>& operator -=(vec2<T>& v) {
+    inline vec2<T>& operator -=(const vec2<T>& v) {
         x -= v.x;
         y -= v.y;
         return *this;
     }
 
-    vec2<T> operator -() {
+    inline vec2<T>& operator *=(const vec2<T>& v) {
+        x *= v.x;
+        y *= v.y;
+        return *this;
+    }
+
+    inline vec2<T>& operator /=(const vec2<T>& v) {
+        x /= v.x;
+        y /= v.y;
+        return *this;
+    }
+
+    // unary minus
+
+    inline constexpr vec2<T> operator -() const {
         return vec2<T>(-x, -y);
     }
 
-    vec2<T> operator +(vec2<T> v) {
+    // vector arithmetic
+
+    inline constexpr vec2<T> operator +(const vec2<T>& v) const {
         return vec2<T>(x + v.x, y + v.y);
     }
 
-    vec2<T> operator -(vec2<T> v) {
+    inline constexpr vec2<T> operator -(const vec2<T>& v) const {
         return vec2<T>(x - v.x, y - v.y);
     }
 
-    vec2<T> operator /(vec2<T> v) {
+    inline constexpr vec2<T> operator /(const vec2<T>& v) const {
         return vec2<T>(x / v.x, y / v.y);
     }
 
-    vec2<T> operator *(vec2<T> v) {
+    inline constexpr vec2<T> operator *(const vec2<T>& v) const {
         return vec2<T>(x * v.x, y * v.y);
     }
 
-    vec2<T> operator +(T s) {
+    // scalar arithmetic
+
+    inline constexpr vec2<T> operator +(T s) const {
         return vec2<T>(x + s, y + s);
     }
 
-    vec2<T> operator -(T s) {
+    inline constexpr vec2<T> operator -(T s) const {
         return vec2<T>(x - s, y - s);
     }
 
-    vec2<T> operator *(T s) {
+    inline constexpr vec2<T> operator *(T s) const {
         return vec2<T>(x * s, y * s);
     }
 
-    vec2<T> operator /(T s) {
-        return vec2<T>(x / s, y / s);
+    inline constexpr vec2<T> operator /(T s) const {
+        T d = static_cast<T>(1) / s;
+        return vec2<T>(x * d, y * d);
     }
 
-    vec2<T>& operator +=(T s) {
+    // compound scalar arithmetic
+
+    inline vec2<T>& operator +=(T s) {
         x += s;
         y += s;
         return *this;
     }
 
-    vec2<T>& operator -=(T s) {
+    inline vec2<T>& operator -=(T s) {
         x -= s;
         y -= s;
         return *this;
     }
 
-    vec2<T>& operator *=(T s) {
+    inline vec2<T>& operator *=(T s) {
         x *= s;
         y *= s;
         return *this;
     }
 
-    vec2<T>& operator /=(T s) {
+    inline vec2<T>& operator /=(T s) {
         x /= s;
         y /= s;
         return *this;
     }
 
-    void set(T x, T y) {
-        this->x = x;
-        this->y = y;
+    inline constexpr vec2<T> normalized() {
+        T len = length();
+        return len > 0 ? *this / len : vec2<T>(0, 0);
     }
 
-    void set(vec2<T> input) {
-        set(input.x, input.y);
-    }
-
-    vec2<T> normalize() {
-        vec2<T> result;
-
-        auto len = length();
+    inline vec2<T> normalize() {
+        T len = length();
         if (!len) {
-            return result;
+            return { 0, 0 };
         }
 
-        result.set(x / len, y / len);
+        T invLen = static_cast<T>(1) / len;
+        x *= invLen;
+        y *= invLen;
 
-        return result;
+        return *this;
     }
 
-    float dist(vec2<T> v) const {
+    inline constexpr T dist(const vec2<T>& v) const {
         vec2<T> d(v.x - x, v.y - y);
         return d.length();
     }
 
-    float length() const {
+    inline constexpr T length() const {
         return std::sqrt(x * x + y * y);
     }
 
-    void truncate(double length) {
+    inline constexpr T length2() const {
+        return x * x + y * y;
+    }
+
+    inline void truncate(double length) {
         double angle = atan2f(y, x);
         x = length * cos(angle);
         y = length * sin(angle);
     }
 
-    vec2<T> ortho() const {
+    inline constexpr vec2<T> ortho() const {
         return vec2<T>(y, -x);
     }
 
-    vec2<T> transformAngular(float sin, float cos, bool reverse) {
+    inline constexpr vec2<T> transformAngular(T sin, T cos, bool reverse) const {
         return vec2<T>(
             reverse
             ? (x * cos  + y * sin)
@@ -146,15 +186,15 @@ public:
             : (y * cos + x * sin));
     }
 
-    std::string str() {
+    std::string str() const {
         return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
     }
 
-    static T dot(vec2<T> v1, vec2<T> v2) {
+    inline constexpr static T dot(vec2<T> v1, vec2<T> v2) {
         return v1.x * v2.x + v1.y * v2.y;
     }
 
-    static T cross(vec2<T> v1, vec2<T> v2) {
+    inline constexpr static T cross(vec2<T> v1, vec2<T> v2) {
         return (v1.x * v2.y) - (v1.y * v2.x);
     }
 };

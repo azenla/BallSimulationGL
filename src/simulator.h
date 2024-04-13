@@ -19,32 +19,34 @@ namespace BallSimulator {
     class Ball {
         float _mass;
         float _radius;
-        vec2f* _position;
-        vec2f* _velocity;
-        Rectangle<Ball*>* _rect;
+        vec2f _position;
+        vec2f _velocity;
+        Rectangle<Ball*> _rect;
 
     public:
         bool isInsideCollision = false;
 
-        Ball(float mass, float radius);
-        Ball(float mass, float radius, vec2f& position);
-        Ball(float mass, float radius, vec2f& position, vec2f& velocity);
-        ~Ball();
+        Ball(float mass, float radius, const vec2f& position = vec2f::zero(), const vec2f& velocity = vec2f::zero());
 
-        float mass() const;
-        float radius() const;
-        vec2f& position() const;
-        vec2f& velocity() const;
+        inline constexpr float mass() const { return _mass; }
+        inline constexpr float radius() const { return _radius; }
 
-        Rectangle<Ball*>* rect() const;
+        inline constexpr const vec2f& get_position() const { return _position; }
+        inline constexpr const vec2f& get_velocity() const { return _velocity; }
 
-        bool collides(Ball& other) const;
-        void collide(Ball& other) const;
+        void set_position(const vec2f& newpos);
+        inline void set_position(float x, float y) { set_position({ x, y }); }
+        inline void set_velocity(const vec2f& newvel) { _velocity = newvel; }
+        inline void set_velocity(float x, float y) { set_velocity({ x, y }); }
 
-        void apply_gravity(World& world, float divisor) const;
-        void apply_velocity(float divisor) const;
-        void check_world_boundary(World& world) const;
-        void set_position(float x, float y) const;
+        inline constexpr const Rectangle<Ball*>& rect() const { return _rect; }
+
+        bool collides(const Ball& other) const;
+        void collide(Ball& other);
+
+        void apply_gravity(World& world, float divisor);
+        void apply_velocity(float divisor);
+        void apply_world_boundary(const World& world);
     };
 
     typedef Quadtree<Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> CollisionQuadtree;
@@ -53,28 +55,28 @@ namespace BallSimulator {
         float _width;
         float _height;
         float _gravity;
-        std::vector<Ball*>* _entities;
-        CollisionQuadtree* _quadtree;
-        Rectangle<Ball*>* _bounds;
+        std::vector<Ball*> _entities;
+        CollisionQuadtree _quadtree;
+        Rectangle<Ball*> _bounds;
 
     public:
         World(float width, float height);
-        ~World();
 
-        float width() const;
-        float height() const;
-        float gravity() const;
+        inline constexpr float width() const { return _width; }
+        inline constexpr float height() const { return _height; }
+        inline constexpr float gravity() const { return _gravity; }
 
         void resize(float width, float height);
-        void change_gravity(float gravity);
+        inline void change_gravity(float gravity) { _gravity = gravity; }
         void check_collisions(float divisor);
 
-        void scatter() const;
+        void scatter();
         void tick(float divisor);
-        void add(Ball* ball) const;
+        void add(Ball* ball);
 
-        std::vector<Ball*>* entities() const;
-        CollisionQuadtree* quadtree() const;
-        Rectangle<Ball*>* bounds() const;
+        inline constexpr const std::vector<Ball*>& entities() const { return _entities; }
+        inline constexpr const CollisionQuadtree& quadtree() const { return _quadtree; }
+        inline constexpr CollisionQuadtree& quadtree() { return _quadtree; }
+        inline constexpr const Rectangle<Ball*>& bounds() const { return _bounds; }
     };
 }

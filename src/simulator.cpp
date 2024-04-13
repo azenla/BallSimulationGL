@@ -4,108 +4,67 @@
 #include <iostream>
 
 namespace BallSimulator {
-    World::World(float width, float height) {
-        _entities = new std::vector<Ball*>();
-        _gravity = DefaultGravity;
-        _bounds = new Rectangle<Ball*>(0.0f, 0.0f, width, height);
-        _quadtree = new CollisionQuadtree(0, bounds());
-    }
-
-    World::~World() {
-        delete _entities;
-        delete _quadtree;
-    }
-
-    float World::width() const {
-        return _width;
-    }
-
-    float World::height() const {
-        return _height;
+    World::World(float width, float height) :
+        _gravity(DefaultGravity),
+        _bounds(Rectangle<Ball*>(0.0f, 0.0f, width, height)),
+        _quadtree(CollisionQuadtree(0, bounds())) {
     }
 
     void World::resize(float width, float height) {
         _width = width;
         _height = height;
 
-        _bounds->w = width;
-        _bounds->h = height;
+        _bounds.w = width;
+        _bounds.h = height;
 
-        delete _quadtree;
-
-        _quadtree = new CollisionQuadtree(0, bounds());
+        _quadtree = CollisionQuadtree(0, bounds());
 
         scatter();
     }
 
-    void World::scatter() const {
-        for (auto it = _entities->begin(); it != _entities->end(); ++it) {
-            auto x = rand() / (RAND_MAX / _width);
-            auto y = rand() / (RAND_MAX / _height);
-            auto ball = *it;
-
-            ball->position().set(x, y);
+    void World::scatter() {
+        for (auto ball : _entities) {
+            ball->set_position(
+                rand() / (RAND_MAX / _width),
+                rand() / (RAND_MAX / _height)
+            );
         }
     }
 
-    void World::change_gravity(float gravity) {
-        _gravity = gravity;
+    void World::add(Ball* ball) {
+        _entities.emplace_back(ball);
     }
 
-    float World::gravity() const {
-        return _gravity;
+    static void DoApplyBallPhysics(World& world, Ball& ball, float divisor) {
+        ball.apply_gravity(world, divisor);
+        ball.apply_velocity(divisor);
     }
 
-    std::vector<Ball*>* World::entities() const {
-        return _entities;
-    }
+    static void DoQuadtreeCollisionDetection(World& world, float divisor) {
+        auto& tree = world.quadtree();
 
-    void World::add(Ball* ball) const {
-        _entities->push_back(ball);
-    }
+        tree.clear();
 
-    CollisionQuadtree* World::quadtree() const {
-        return _quadtree;
-    }
-
-    Rectangle<Ball*>* World::bounds() const {
-        return _bounds;
-    }
-
-    static void DoApplyBallPhysics(World* world, Ball* ball, float divisor) {
-        ball->apply_gravity(*world, divisor);
-        ball->apply_velocity(divisor);
-    }
-
-    static void DoQuadtreeCollisionDetection(World* world, float divisor) {
-        auto tree = world->quadtree();
-
-        tree->clear();
-
-        auto entities = world->entities();
+        const auto& entities = world.entities();
         auto i = 0;
-        auto count = entities->size();
-        auto array = new Rectangle<Ball*>*[count];
-        for (auto it = entities->begin(); it != entities->end(); ++it) {
-            auto ball = *it;
+        auto count = entities.size();
+        std::vector<const Rectangle<Ball*>*> array(count);
+        for (const auto& ball : entities) {
+            DoApplyBallPhysics(world, *ball, divisor);
 
-            DoApplyBallPhysics(world, ball, divisor);
-
-            auto rect = ball->rect();
-            tree->insert(rect);
-            array[i] = rect;
-            i++;
+            const auto& rect = ball->rect();
+            tree.insert(rect);
+            array[i++] = &rect;
         }
 
-        std::vector<Rectangle<Ball*>*> queued;
-        for (i = 0; i < entities->size(); i++) {
-            auto rect = array[i];
+        std::vector<const Rectangle<Ball*>*> queued;
+        for (const auto& rect : array) {
             auto ballA = rect->value;
-            tree->retrieve(&queued, rect);
+            tree.retrieve(queued, *rect);
 
             auto colliding = false;
-            for (auto bb = queued.begin(); bb != queued.end(); ++bb) {
-                auto ballB = (*bb)->value;
+            for (auto bb : queued) {
+                const auto& ballB = bb->value;
 
                 if (ballB && ballB != ballA && ballA->collides(*ballB)) {
                     ballA->collide(*ballB);
@@ -115,27 +74,25 @@ namespace BallSimulator {
 
             ballA->isInsideCollision = colliding;
 
-            ballA->check_world_boundary(*world);
+            ballA->apply_world_boundary(world);
 
             queued.clear();
         }
-
-        delete[] array;
     }
 
-    static void DoSimpleCollisionDetection(World* world, float divisor) {
-        auto entities = world->entities();
+    static void DoSimpleCollisionDetection(World& world, float divisor) {
+        auto& entities = world.entities();
 
-        for (auto it = entities->begin(); it != entities->end(); ++it) {
-            DoApplyBallPhysics(world, *it, divisor);
+        for (auto& ball : entities) {
+            DoApplyBallPhysics(world, *ball, divisor);
         }
 
-        for (unsigned long i = 0; i < entities->size(); i++) {
-            auto b = entities->at(i);
+        for (unsigned long i = 0; i < entities.size(); i++) {
+            auto b = entities.at(i);
             auto colliding = false;
 
-            for (auto j = i + 1; j < entities->size(); j++) {
-                auto bb = entities->at(j);
+            for (auto j = i + 1; j < entities.size(); j++) {
+                auto bb = entities.at(j);
                 if (b->collides(*bb)) {
                     colliding = true;
                     b->collide(*bb);
@@ -143,87 +100,45 @@ namespace BallSimulator {
             }
 
             b->isInsideCollision = colliding;
-            b->check_world_boundary(*world);
+            b->apply_world_boundary(world);
         }
     }
 
     void World::check_collisions(float divisor) {
-        DoQuadtreeCollisionDetection(this, divisor);
+        DoQuadtreeCollisionDetection(*this, divisor);
+        //DoSimpleCollisionDetection(*this, divisor);
     }
 
     void World::tick(float divisor) {
         check_collisions(divisor);
     }
 
-    Ball::Ball(float mass, float radius) {
+    Ball::Ball(float mass, float radius, const vec2f& position, const vec2f& velocity) :
+            _rect(Rectangle<Ball*>(position.x, position.y, radius * 2, radius * 2, this)) {
         _mass = mass;
         _radius = radius;
-        _position = new vec2f();
-        _velocity = new vec2f();
-        _rect = new Rectangle<Ball*>(0.0f, 0.0f, radius * 2, radius * 2, this);
+        _position = position;
+        _velocity = velocity;
     }
 
-    Ball::Ball(float mass, float radius, vec2f& position) {
-        _mass = mass;
-        _radius = radius;
-        _position = new vec2f(position);
-        _velocity = new vec2f();
-        _rect = new Rectangle<Ball*>(0.0f, 0.0f, radius * 2, radius * 2, this);
+    void Ball::set_position(const vec2f& newPos) {
+        _position = newPos;
+        _rect.x = newPos.x;
+        _rect.y = newPos.y;
     }
 
-    Ball::Ball(float mass, float radius, vec2f& position, vec2f& velocity) {
-        _mass = mass;
-        _radius = radius;
-        _position = new vec2f(position);
-        _velocity = new vec2f(velocity);
-        _rect = new Rectangle<Ball*>(0.0f, 0.0f, radius * 2, radius * 2, this);
-    }
-
-    Ball::~Ball() {
-        delete _position;
-        delete _velocity;
-        delete _rect;
-    }
-
-    float Ball::radius() const {
-        return _radius;
-    }
-
-    float Ball::mass() const {
-        return _mass;
-    }
-
-    void Ball::set_position(float x, float y) const {
-        position().set(x, y);
-        _rect->x = x;
-        _rect->y = y;
-    }
-
-    Rectangle<Ball*>* Ball::rect() const {
-        return _rect;
-    }
-
-    vec2f& Ball::position() const {
-        return *_position;
-    }
-
-    vec2f& Ball::velocity() const {
-        return *_velocity;
-    }
-
-    bool Ball::collides(Ball& other) const {
-        auto diffX = position().x - other.position().x;
-        auto diffY = position().y - other.position().y;
+    bool Ball::collides(const Ball& other) const {
+        auto diff = _position - other._position;
         auto totalRadius = radius() + other.radius();
         auto radiusSquared = totalRadius * totalRadius;
-        auto distanceSquared = diffX * diffX + diffY * diffY;
+        auto distanceSquared = diff.length();
 
-        return radiusSquared - distanceSquared > Epsilon;
+        return radiusSquared - diff.length2() > Epsilon;
     }
 
-    void Ball::collide(Ball& other) const {
+    void Ball::collide(Ball& other) {
         auto totalRadius = radius() + other.radius();
-        auto delta = position() - other.position();
+        auto delta = _position - other.get_position();
         auto distance = delta.length();
 
         if (abs(totalRadius * totalRadius - vec2f::dot(delta, delta)) < Epsilon) {
@@ -233,7 +148,7 @@ namespace BallSimulator {
         auto isOnTopOfEachOther = abs(distance) <= Epsilon;
         if (isOnTopOfEachOther) {
             distance = totalRadius - 1.0f;
-            delta.set(totalRadius, 0.0f);
+            delta = vec2f(totalRadius, 0.0f);
         }
         auto minimumTranslationDistance = delta * ((totalRadius - distance) / distance);
 
@@ -241,13 +156,10 @@ namespace BallSimulator {
         auto inverseMassB = 1.0f / other.mass();
         auto inverseMassTotal = inverseMassA + inverseMassB;
 
-        auto targetPositionA = position() + minimumTranslationDistance * (inverseMassA / inverseMassTotal);
-        auto targetPositionB = other.position() - minimumTranslationDistance * (inverseMassB / inverseMassTotal);
+        set_position(_position + minimumTranslationDistance * (inverseMassA / inverseMassTotal));
+        other.set_position(other.get_position() - minimumTranslationDistance * (inverseMassB / inverseMassTotal));
 
-        set_position(targetPositionA.x, targetPositionA.y);
-        other.set_position(targetPositionB.x, targetPositionB.y);
-
-        auto impactSpeed = velocity() - other.velocity();
+        auto impactSpeed = _velocity - other._velocity;
         auto velocityNumber = vec2f::dot(impactSpeed, minimumTranslationDistance.normalize());
 
         if (velocityNumber > 0.0f) {
@@ -255,63 +167,49 @@ namespace BallSimulator {
         }
 
         auto impulseFactor = -2.0f * velocityNumber / inverseMassTotal;
-        auto impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
+        vec2f impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
 
-        auto deltaVelocityA = impulse * inverseMassA;
-        auto deltaVelocityB = impulse * inverseMassB;
-
-        auto targetVelocityA = velocity() + deltaVelocityA;
-        auto targetVelocityB = other.velocity() - deltaVelocityB;
-
-        velocity().set(targetVelocityA);
-        other.velocity().set(targetVelocityB);
+        _velocity += impulse * inverseMassA;
+        other.set_velocity(other._velocity - impulse * inverseMassB);
     }
 
-    void Ball::apply_gravity(World& world, float divisor) const {
-        if (abs(world.gravity()) > Epsilon) {
-            auto vel = _velocity;
-            vel->y = vel->y + world.gravity() / divisor;
+    void Ball::apply_gravity(World& world, float divisor) {
+        if (std::abs(world.gravity()) > Epsilon) {
+            _velocity.y += world.gravity() / divisor;
         }
     }
 
-    void Ball::apply_velocity(float divisor) const {
-        auto vel = _velocity;
-        auto pos = _position;
-
-        if (abs(vel->x) < Epsilon) {
-            vel->x = 0.0f;
+    void Ball::apply_velocity(float divisor) {
+        if (std::abs(_velocity.x) < Epsilon) {
+            _velocity.x = 0.0f;
         } else {
-            auto delta = vel->x / divisor;
-            set_position(pos->x + delta, pos->y);
+            auto delta = _velocity.x / divisor;
+            set_position(_position.x + delta, _position.y);
         }
 
-        if (abs(vel->y) < Epsilon) {
-            vel->y = 0.0f;
+        if (std::abs(_velocity.y) < Epsilon) {
+            _velocity.y = 0.0f;
         } else {
-            auto delta = vel->y / divisor;
-            set_position(pos->x, pos->y + delta);
+            auto delta = _velocity.y / divisor;
+            set_position(_position.x, _position.y + delta);
         }
     }
 
-    void Ball::check_world_boundary(World& world) const {
-        auto r2 = radius();
-        auto vel = _velocity;
-        auto pos = _position;
-
-        if (pos->x - r2 < Epsilon) {
-            set_position(r2, pos->y);
-            vel->x = -vel->x;
-        } else if (pos->x + r2 > world.width()) {
-            set_position(world.width() - r2, pos->y);
-            vel->x = -vel->x;
+    void Ball::apply_world_boundary(const World& world) {
+        if (_position.x - _radius < Epsilon) {
+            set_position(_radius, _position.y);
+            _velocity.x = -_velocity.x;
+        } else if (_position.x + _radius > world.width()) {
+            set_position(world.width() - _radius, _position.y);
+            _velocity.x = -_velocity.x;
         }
 
-        if (pos->y - r2 < Epsilon) {
-            set_position(pos->x, r2);
-            vel->y = -vel->y;
-        } else if (pos->y + r2 > world.height()) {
-            set_position(pos->x, world.height() - r2);
-            vel->y = -vel->y;
+        if (_position.y - _radius < Epsilon) {
+            set_position(_position.x, _radius);
+            _velocity.y = -_velocity.y;
+        } else if (_position.y + _radius > world.height()) {
+            set_position(_position.x, world.height() - _radius);
+            _velocity.y = -_velocity.y;
         }
     }
 }

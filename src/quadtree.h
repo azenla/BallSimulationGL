@@ -23,14 +23,14 @@ struct Rectangle {
         this->value = value;
     }
 
-    bool is_inside(Rectangle<T>* item) {
-        return item->x >= x &&
-            item->x + item->w <= x + w &&
-            item->y >= y &&
-            item->y + item->h <= y + h;
+    constexpr bool is_inside(const Rectangle<T>& item) const {
+        return item.x >= x &&
+            item.x + item.w <= x + w &&
+            item.y >= y &&
+            item.y + item.h <= y + h;
     }
 
-    ~Rectangle() {}
+    ~Rectangle() = default;
 };
 
 template <typename T, int MaxObjects, int MaxLevels>
@@ -40,41 +40,41 @@ class Quadtree {
     static const auto NODE_BOTTOM_LEFT = 2;
     static const auto NODE_BOTTOM_RIGHT = 3;
 
-    std::vector<Rectangle<T>*>* _objects;
-    std::vector<Rectangle<T>*>* _stuck;
+    std::vector<const Rectangle<T>*> _objects;
+    std::vector<const Rectangle<T>*> _stuck;
 
     Quadtree<T, MaxObjects, MaxLevels>* _nodes[4] = {nullptr, nullptr, nullptr, nullptr};
 
     int _level;
-    Rectangle<T>* _bounds;
+    Rectangle<T> _bounds;
 
     void split() {
-        auto subWidth = _bounds->w / 2.0f;
-        auto subHeight = _bounds->h / 2.0f;
-        auto x = _bounds->x;
-        auto y = _bounds->y;
+        auto subWidth = _bounds.w / 2.0f;
+        auto subHeight = _bounds.h / 2.0f;
+        auto x = _bounds.x;
+        auto y = _bounds.y;
 
-        _nodes[NODE_TOP_LEFT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
+        _nodes[NODE_TOP_LEFT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, Rectangle<T>{
             x + subWidth, y, subWidth, subHeight
         });
 
-        _nodes[NODE_TOP_RIGHT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
+        _nodes[NODE_TOP_RIGHT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, Rectangle<T>{
             x, y, subWidth, subHeight
         });
 
-        _nodes[NODE_BOTTOM_LEFT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
+        _nodes[NODE_BOTTOM_LEFT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, Rectangle<T>{
             x, y + subHeight, subWidth, subHeight
         });
 
-        _nodes[NODE_BOTTOM_RIGHT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, new Rectangle<T>{
+        _nodes[NODE_BOTTOM_RIGHT] = new Quadtree<T, MaxObjects, MaxLevels>(_level + 1, Rectangle<T>{
             x + subWidth, y + subHeight, subWidth, subHeight
         });
     }
 
-    int get_index(Rectangle<T>* rect) {
+    int get_index(const Rectangle<T>* rect) {
         auto idx = -1;
-        auto verticalMidpoint = _bounds->x + (_bounds->w / 2.0f);
-        auto horizontalMidpoint = _bounds->y + (_bounds->h / 2.0f);
+        auto verticalMidpoint = _bounds.x + (_bounds.w / 2.0f);
+        auto horizontalMidpoint = _bounds.y + (_bounds.h / 2.0f);
         auto topQuadrant = (rect->y < horizontalMidpoint && rect->y + rect->h < horizontalMidpoint);
         auto bottomQuadrant = (rect->y > horizontalMidpoint);
 
@@ -99,44 +99,28 @@ class Quadtree {
         return _nodes[idx];
     }
 
-    void append_our_objects(std::vector<Rectangle<T>*>* objects) {
-        objects->insert(objects->end(), _objects->begin(), _objects->end());
-        objects->insert(objects->end(), _stuck->begin(), _stuck->end());
+    void append_our_objects(std::vector<const Rectangle<T>*>& objects) {
+        objects.insert(std::end(objects), std::begin(_objects), std::end(_objects));
+        objects.insert(std::end(objects), std::begin(_stuck), std::end(_stuck));
     }
 
 public:
-    Quadtree(int level, Rectangle<T>* bounds) {
-        _level = level;
-        _bounds = bounds;
-        _objects = new std::vector<Rectangle<T>*>();
-        _stuck = new std::vector<Rectangle<T>*>();
+    Quadtree(int level, const Rectangle<T>& bounds) :
+        _level(level),
+        _bounds(bounds) {
     }
 
     ~Quadtree() {
-        if (_objects) {
-            _objects->clear();
-            delete _objects;
-        }
-
-        if (_stuck) {
-            _stuck->clear();
-            delete _stuck;
-        }
-
         for (auto i = 0; i < 4; i++) {
             if (_nodes[i] != nullptr) {
                 delete _nodes[i];
             }
         }
-
-        if (_level != 0) {
-            delete _bounds;
-        }
     }
 
     void clear() {
-        _objects->clear();
-        _stuck->clear();
+        _objects.clear();
+        _stuck.clear();
         for (auto i = 0; i < 4; i++) {
             if (_nodes[i] != nullptr) {
                 delete _nodes[i];
@@ -145,38 +129,38 @@ public:
         }
     }
 
-    void insert(Rectangle<T>* item) {
+    void insert(const Rectangle<T>& item) {
         if (_nodes[0] != nullptr) {
-            auto idx = get_index(item);
+            auto idx = get_index(&item);
 
             if (idx != -1) {
                 auto node = find_node(idx);
 
-                if (node->_bounds->is_inside(item)) {
+                if (node->_bounds.is_inside(item)) {
                     node->insert(item);
                 }
                 else {
-                    _stuck->push_back(item);
+                    _stuck.push_back(&item);
                 }
 
                 return;
             }
         }
 
-        _objects->push_back(item);
+        _objects.push_back(&item);
 
-        if (_objects->size() > MaxObjects && _level < MaxLevels) {
+        if (_objects.size() > MaxObjects && _level < MaxLevels) {
             if (_nodes[0] == nullptr) {
                 split();
             }
 
             unsigned int i = 0;
-            while (i < _objects->size()) {
-                auto obj = _objects->at(i);
+            while (i < _objects.size()) {
+                auto obj = _objects.at(i);
                 auto idx = get_index(obj);
                 if (idx != -1) {
-                    _objects->erase(_objects->begin() + i);
-                    find_node(idx)->insert(obj);
+                    _objects.erase(_objects.begin() + i);
+                    find_node(idx)->insert(*obj);
                 } else {
                     i++;
                 }
@@ -184,31 +168,31 @@ public:
         }
     }
 
-    void retrieve(std::vector<Rectangle<T>*>* objects, Rectangle<T>* item) {
-        auto idx = get_index(item);
+    void retrieve(std::vector<const Rectangle<T>*>& objects, const Rectangle<T>& item) {
+        auto idx = get_index(&item);
 
         if (idx != -1 && _nodes[idx] != nullptr) {
             auto node = _nodes[idx];
             auto bounds = node->_bounds;
-            if (bounds->is_inside(item)) {
+            if (bounds.is_inside(item)) {
                 node->retrieve(objects, item);
             } else {
-                if (item->x <= _nodes[NODE_TOP_RIGHT]->_bounds->x) {
-                    if (item->y <= _nodes[NODE_BOTTOM_LEFT]->_bounds->y) {
+                if (item.x <= _nodes[NODE_TOP_RIGHT]->_bounds.x) {
+                    if (item.y <= _nodes[NODE_BOTTOM_LEFT]->_bounds.y) {
                         _nodes[NODE_TOP_LEFT]->append_our_objects(objects);
                     }
 
-                    if (item->y + item->h > _nodes[NODE_BOTTOM_LEFT]->_bounds->y) {
+                    if (item.y + item.h > _nodes[NODE_BOTTOM_LEFT]->_bounds.y) {
                         _nodes[NODE_BOTTOM_LEFT]->append_our_objects(objects);
                     }
                 }
 
-                if (item->x + item->w > _nodes[NODE_TOP_RIGHT]->_bounds->x) {
-                    if (item->y <= _nodes[NODE_BOTTOM_RIGHT]->_bounds->y) {
+                if (item.x + item.w > _nodes[NODE_TOP_RIGHT]->_bounds.x) {
+                    if (item.y <= _nodes[NODE_BOTTOM_RIGHT]->_bounds.y) {
                         _nodes[NODE_TOP_RIGHT]->append_our_objects(objects);
                     }
 
-                    if (item->y + item->h > _nodes[NODE_BOTTOM_RIGHT]->_bounds->y) {
+                    if (item.y + item.h > _nodes[NODE_BOTTOM_RIGHT]->_bounds.y) {
                         _nodes[NODE_BOTTOM_RIGHT]->append_our_objects(objects);
                     }
                 }
@@ -226,11 +210,19 @@ public:
         }
     }
 
+    void for_each_node(void func(const Quadtree<T, MaxObjects, MaxLevels>& tree)) const {
+        for (auto i = 0; i < 4; i++) {
+            if (_nodes[i] != nullptr) {
+                func(*_nodes[i]);
+            }
+        }
+    }
+
     std::vector<Rectangle<T> *>* objects() const {
         return _objects;
     }
 
-    Rectangle<T>* bounds() const {
+    const Rectangle<T>& bounds() const {
         return _bounds;
     }
 };

@@ -53,13 +53,13 @@ int frames = 0;
 double fps = 60.0;
 double lastFrameTime = 0.0;
 
-void render_quadtree_bounds(BallSimulator::CollisionQuadtree* tree) {
-    auto bounds = tree->bounds();
+void render_quadtree_bounds(const BallSimulator::CollisionQuadtree& tree) {
+    auto bounds = tree.bounds();
 
     glColor3f(0.0f, 0.0f, 1.0f);
-    draw_unfilled_rect(bounds->x, bounds->y, bounds->x + bounds->w, bounds->y + bounds->h);
+    draw_unfilled_rect(bounds.x, bounds.y, bounds.x + bounds.w, bounds.y + bounds.h);
 
-    tree->for_each_node(render_quadtree_bounds);
+    tree.for_each_node(render_quadtree_bounds);
 }
 
 void render() {
@@ -81,10 +81,8 @@ void render() {
     lastFrameTime = micros;
 
     glClear(GL_COLOR_BUFFER_BIT);
-    auto entities = world->entities();
-    for (auto it = entities->begin(); it != entities->end(); ++it) {
-        auto ball = *it;
-        auto pos = ball->position();
+    for (auto ball : world->entities()) {
+        vec2f pos = ball->get_position();
         if (ball->isInsideCollision) {
             glColor3f(1.0, 1.0, 0.0);
         } else {
@@ -123,8 +121,8 @@ void mouse(GLFWwindow* window, int button, int action, int mods) {
     glfwGetCursorPos(window, &x, &y);
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        ball->position().set(float(x), float(y));
-        ball->velocity().set(10.0f, 10.0f);
+        ball->set_position(vec2f(x, y));
+        ball->set_velocity(vec2f(10.0f, 10.0f));
         world->add(ball);
     }
 }
@@ -144,7 +142,7 @@ int main(int argc, char** argv) {
     for (auto i = 1; i <= 200; i++) {
         auto ball = new BallSimulator::Ball(3.0f, 10.0f);
         auto stateNegate = -state;
-        ball->velocity().set(state, stateNegate);
+        ball->set_velocity(state, stateNegate);
         world->add(ball);
         state = -state;
     }
