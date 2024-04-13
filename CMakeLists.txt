@@ -10,7 +10,13 @@ add_subdirectory(deps/glfw)
 
 find_package(OpenGL REQUIRED)
 
-set(LIB_FILES src/quadtree.h src/simulator.cpp src/simulator.h src/vec2.h)
+set(LIB_FILES
+    src/vec2.hpp
+    src/rectangle.hpp
+    src/quadtree.hpp
+    src/ball.cpp src/ball.hpp
+    src/world.cpp src/world.hpp
+    src/simulator.cpp src/simulator.hpp)
 set(SIM_FILES src/main.cpp ${LIB_FILES} src/config.h)
 add_executable(BallSimulator ${SIM_FILES})
 add_executable(BallSimulatorCli src/main_cli.cpp ${LIB_FILES})

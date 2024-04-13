@@ -1,4 +1,6 @@
-#include "simulator.h"
+#include "simulator.hpp"
+#include "world.hpp"
+#include "ball.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -8,7 +10,7 @@ extern "C" {
     #include <GLFW/glfw3.h>
 }
 
-BallSimulator::World* world;
+std::unique_ptr<BallSimulator::World> world;
 
 static const int TriangleAmount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
 static const float TwicePi = 2.0f * 3.1415926f;
@@ -77,7 +79,7 @@ void render() {
     auto micros = glTime * 1000 * 1000;
     auto timeHasPassed = micros - lastFrameTime;
     auto divisor = float(timeHasPassed) / 1000.0f / 2;
-    world->tick(divisor);
+    BallSimulator::DoQuadtreeCollisionDetection(*world, divisor);
     lastFrameTime = micros;
 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -136,7 +138,7 @@ int main(int argc, char** argv) {
 
     srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
         (std::chrono::system_clock::now().time_since_epoch()).count()));
-    world = new BallSimulator::World(1024, 1024);
+    world = std::make_unique<BallSimulator::World>(1024, 1024);
     world->change_gravity(0.0f);
     auto state = 10.0f;
     for (auto i = 1; i <= 200; i++) {
