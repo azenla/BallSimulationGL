@@ -23,6 +23,7 @@ namespace BallSimulator {
 
         void scatter();
         void add(Ball* ball);
+        void add(Ball&& ball);
 
         inline constexpr const std::vector<Ball*>& entities() const { return _entities; }
         inline constexpr const CollisionQuadtree& quadtree() const { return _quadtree; }

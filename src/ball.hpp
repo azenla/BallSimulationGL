@@ -2,6 +2,7 @@
 
 #include "vec2.hpp"
 #include "rectangle.hpp"
+#include <utility>
 
 namespace BallSimulator {
     class World;
@@ -17,6 +18,12 @@ namespace BallSimulator {
         int collisionFlash = 0;
 
         Ball(float mass, float radius, const vec2f& position = vec2f::zero(), const vec2f& velocity = vec2f::zero());
+        constexpr Ball(Ball&& other) :
+            _mass(other._mass),
+            _radius(other._radius),
+            _position(std::move(other._position)),
+            _velocity(std::move(other._velocity)),
+            _rect(other._rect.x, other._rect.y, other._rect.w, other._rect.h, this) {}
 
         inline constexpr float mass() const { return _mass; }
         inline constexpr float radius() const { return _radius; }

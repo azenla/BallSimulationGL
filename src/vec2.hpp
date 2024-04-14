@@ -8,16 +8,16 @@ class vec2 {
 public:
     T x, y;
 
-    vec2() : x(0), y(0) {}
+    constexpr vec2() : x(0), y(0) {}
 
-    vec2(T x, T y) : x(x), y(y) {}
+    constexpr vec2(T x, T y) : x(x), y(y) {}
 
-    vec2(const vec2<T>& v) : x(v.x), y(v.y) {}
+    constexpr vec2(const vec2<T>& v) : x(v.x), y(v.y) {}
 
-    vec2(vec2<T>&& v) : x(v.x), y(v.y) {}
+    constexpr vec2(vec2<T>&& v) : x(v.x), y(v.y) {}
 
     template <typename F>
-    vec2(const vec2<F>& v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y)) {}
+    constexpr vec2(const vec2<F>& v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y)) {}
 
     // constants
 

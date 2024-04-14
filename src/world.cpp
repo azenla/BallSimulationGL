@@ -1,6 +1,7 @@
 #include "world.hpp"
 #include "ball.hpp"
 #include "quadtree.hpp"
+#include <utility>
 
 using namespace BallSimulator;
 
@@ -33,4 +34,8 @@ void World::scatter() {
 
 void World::add(Ball* ball) {
     _entities.emplace_back(ball);
+}
+
+void World::add(Ball&& ball) {
+    _entities.emplace_back(new Ball(std::move(ball)));
 }

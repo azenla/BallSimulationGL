@@ -119,10 +119,10 @@ void mouse(GLFWwindow* window, int button, int action, int mods) {
         glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
         cursorPos *= contentScale;
 
-        auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        ball->set_position(static_cast<vec2f>(cursorPos));
-        ball->set_velocity(vec2f(10.0f, 10.0f));
-        world->add(ball);
+        BallSimulator::Ball ball(5.0f, 20.0f);
+        ball.set_position(static_cast<vec2f>(cursorPos));
+        ball.set_velocity(vec2f(10.0f, 10.0f));
+        world->add(std::move(ball));
     }
 }
 

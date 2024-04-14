@@ -5,14 +5,14 @@ struct Rectangle {
     float x, y, w, h;
     T value;
 
-    Rectangle(float xx, float yy, float ww, float hh) {
+    constexpr Rectangle(float xx, float yy, float ww, float hh) {
         x = xx;
         y = yy;
         w = ww;
         h = hh;
     }
 
-    Rectangle(float xx, float yy, float ww, float hh, T value) {
+    constexpr Rectangle(float xx, float yy, float ww, float hh, T value) {
         x = xx;
         y = yy;
         w = ww;
