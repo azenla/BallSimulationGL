@@ -117,12 +117,16 @@ void reshape(GLFWwindow* window, int w, int h) {
     world->scatter();
 }
 
+static vec2d contentScale = { 1, 1 };
+
 void mouse(GLFWwindow* window, int button, int action, int mods) {
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        vec2d cursorPos;
+        glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
+        cursorPos *= contentScale;
+
         auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        ball->set_position(vec2f(x, y));
+        ball->set_position(static_cast<vec2f>(cursorPos));
         ball->set_velocity(vec2f(10.0f, 10.0f));
         world->add(ball);
     }
@@ -162,6 +166,19 @@ int main(int argc, char** argv) {
     if (window == nullptr) {
         glfwTerminate();
         return 1;
+    }
+
+    // work out the content scale for scaling mouse input
+    {
+        int winWidth, winHeight, frameWidth, frameHeight;
+        glfwGetWindowSize(window, &winWidth, &winHeight);
+        glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
+        if (winWidth > 0 && winHeight > 0 && frameWidth > 0 && frameHeight > 0) {
+            contentScale = {
+                static_cast<double>(frameWidth) / static_cast<double>(winWidth),
+                static_cast<double>(frameHeight) / static_cast<double>(winHeight)
+            };
+        }
     }
 
     glfwSetMouseButtonCallback(window, mouse);

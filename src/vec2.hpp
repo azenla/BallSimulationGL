@@ -16,6 +16,9 @@ public:
 
     vec2(vec2<T>&& v) : x(v.x), y(v.y) {}
 
+    template <typename F>
+    vec2(const vec2<F>& v) : x(static_cast<T>(v.x)), y(static_cast<T>(v.y)) {}
+
     // constants
 
     static constexpr vec2<T> zero() { return { static_cast<T>(0), static_cast<T>(0) }; }
