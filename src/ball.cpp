@@ -4,13 +4,6 @@
 
 using namespace BallSimulator;
 
-Ball::Ball(float mass, float radius, const vec2f& position, const vec2f& velocity) {
-    _mass = mass;
-    _radius = radius;
-    _position = position;
-    _velocity = velocity;
-}
-
 void Ball::update(const World& world, float deltaTime) {
     _velocity.y += world.gravity() * deltaTime;
     set_position(_position + _velocity * deltaTime);

@@ -1,19 +1,23 @@
+#include "config.h"
 #include "simulator.hpp"
 #include "ball.hpp"
 #include "world.hpp"
 
-#include <thread>
-#include <chrono>
+using namespace BallSimulator;
 
 int main() {
-    auto world = std::make_unique<BallSimulator::World>(1024, 1024);
+    World world(1024, 1024);
+
     for (auto i = 1; i <= 20; i++) {
-        auto ball = new BallSimulator::Ball(5.0f, 20.0f);
-        world->add(ball);
+        world.add(Ball(5.0f, 20.0f));
     }
 
     for (auto i = 1; i <= 1000000; i++) {
-        BallSimulator::DoQuadtreeCollisionDetection(*world, 0.01f);
+#ifdef USE_QUADTREES
+        DoQuadtreeCollisionDetection(world, 0.01f);
+#else
+        DoSimpleCollisionDetection(world, 0.01f);
+#endif
     }
 
     return 0;

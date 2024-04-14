@@ -1,15 +1,12 @@
 #include "application.hpp"
 #include "simulator.hpp"
 #include "world.hpp"
-#include "ball.hpp"
 #include "renderer.hpp"
 
-#include <iostream>
+#include <GLFW/glfw3.h>
 #include <chrono>
 #include <vector>
-#include <thread>
-
-#include <GLFW/glfw3.h>
+#include <iostream>
 
 unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius) {
     constexpr int triangleFanCount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
@@ -77,7 +74,7 @@ void Application::render() {
     ballInstances.reserve(world.entities().size());
 
     renderer->new_frame();
-    for (auto ball : world.entities()) {
+    for (auto& ball : world.entities()) {
         gfx::Instance instance;
         instance.position = ball->get_position();
         instance.scale = ball->radius();
@@ -143,7 +140,7 @@ bool Application::init() {
 
     // setup world
 #ifdef SIMULATION_GRAVITY
-    world.change_gravity(SIMULATION_GRAVITY);
+    world.set_gravity(SIMULATION_GRAVITY);
 #endif
     auto state = 10.0f;
     for (auto i = 1; i <= 200; i++) {
@@ -187,7 +184,7 @@ void Application::mouse(int button, int action) {
         BallSimulator::Ball ball(5.0f, 20.0f);
         ball.set_position(static_cast<vec2f>(cursorPos));
         ball.set_velocity(vec2f(10.0f, 10.0f));
-        world.add(std::move(ball));
+        world.add(ball);
     }
 }
 

@@ -1,5 +1,4 @@
 #include "world.hpp"
-#include "ball.hpp"
 #include "quadtree.hpp"
 #include <utility>
 
@@ -24,18 +23,10 @@ void World::resize(float width, float height) {
 }
 
 void World::scatter() {
-    for (auto ball : _entities) {
+    for (auto& ball : _entities) {
         ball->set_position(
             rand() / (RAND_MAX / _width),
             rand() / (RAND_MAX / _height)
         );
     }
-}
-
-void World::add(Ball* ball) {
-    _entities.emplace_back(ball);
-}
-
-void World::add(Ball&& ball) {
-    _entities.emplace_back(new Ball(std::move(ball)));
 }

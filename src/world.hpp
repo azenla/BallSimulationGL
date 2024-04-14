@@ -1,13 +1,15 @@
 #pragma once
 
 #include "simulator.hpp"
+#include "ball.hpp"
+#include <memory>
 
 namespace BallSimulator {
     class World {
         float _width;
         float _height;
         float _gravity;
-        std::vector<Ball*> _entities;
+        std::vector<std::unique_ptr<Ball>> _entities;
         CollisionQuadtree _quadtree;
         Rectangle<float> _bounds;
 
@@ -19,13 +21,13 @@ namespace BallSimulator {
         inline constexpr float gravity() const { return _gravity; }
 
         void resize(float width, float height);
-        inline void change_gravity(float gravity) { _gravity = gravity; }
-
+        inline void set_gravity(float gravity) { _gravity = gravity; }
         void scatter();
-        void add(Ball* ball);
-        void add(Ball&& ball);
 
-        inline constexpr const std::vector<Ball*>& entities() const { return _entities; }
+        void add(const Ball& ball) { _entities.emplace_back(std::make_unique<Ball>(ball)); }
+        void add(Ball&& ball)      { _entities.emplace_back(std::make_unique<Ball>(std::move(ball))); }
+
+        inline constexpr const std::vector<std::unique_ptr<Ball>>& entities() const { return _entities; }
         inline constexpr const CollisionQuadtree& quadtree() const { return _quadtree; }
         inline constexpr CollisionQuadtree& quadtree() { return _quadtree; }
         inline constexpr const Rectangle<float>& bounds() const { return _bounds; }
