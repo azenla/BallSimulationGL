@@ -38,11 +38,11 @@ void Renderer::viewport(int width, int height) {
 }
 
 
-void Renderer::newFrame() {
+void Renderer::new_frame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-unsigned Renderer::createMesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
+unsigned Renderer::create_mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
     GLuint list = glGenLists(1);
     if (list == 0) {
         return 0;
@@ -59,7 +59,7 @@ unsigned Renderer::createMesh(const std::vector<Vertex>& vertices, const std::ve
     return static_cast<unsigned>(list);
 }
 
-void Renderer::deleteMesh(unsigned mesh) {
+void Renderer::delete_mesh(unsigned mesh) {
     assert(mesh);
     glDeleteLists(mesh, 1);
 }
@@ -74,7 +74,7 @@ static void glColor(Color color) {
     );
 }
 
-void Renderer::drawMesh(unsigned mesh, const Instance& instance) {
+void Renderer::draw_mesh(unsigned mesh, const Instance& instance) {
     assert(mesh);
 
     GLfloat x = instance.position.x;
@@ -88,10 +88,10 @@ void Renderer::drawMesh(unsigned mesh, const Instance& instance) {
     glCallList(static_cast<GLuint>(mesh));
 }
 
-void Renderer::drawMesh(unsigned mesh, const Instance* instances, std::size_t numInstance) {
+void Renderer::draw_mesh(unsigned mesh, const Instance* instances, std::size_t numInstance) {
     assert(instances);
     for (std::size_t i = 0; i < numInstance; ++i) {
-        drawMesh(mesh, instances[i]);
+        draw_mesh(mesh, instances[i]);
     }
 }
 

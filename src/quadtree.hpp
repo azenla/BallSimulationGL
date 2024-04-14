@@ -28,6 +28,7 @@ private:
 
         typedef typename std::array<Quadtree, 4>::size_type size_type;
         inline constexpr Quadtree& at(size_type i) { return _nodes.at(i); }
+        inline constexpr const Quadtree& at(size_type i) const { return _nodes.at(i); }
         inline constexpr Quadtree& operator [](size_type i) { return _nodes[i]; }
 
         typedef typename std::array<Quadtree, 4>::iterator iterator;
@@ -39,9 +40,6 @@ private:
     int _level;
     Rectangle<float> _bounds;
     std::unique_ptr<Quad> _nodes;
-
-    constexpr Quadtree& get_node(int idx) { return _nodes->at(idx); }
-    constexpr const Quadtree& get_node(int idx) const { return _nodes->at(idx); }
 
     void split() {
         auto subWidth = _bounds.w / 2.0f;
@@ -108,7 +106,7 @@ public:
             auto idx = get_index(item);
 
             if (idx != -1) {
-                auto& node = get_node(idx);
+                auto& node = _nodes->at(idx);
 
                 if (node._bounds.is_inside(item.get().rect())) {
                     node.insert(item);
@@ -134,7 +132,7 @@ public:
                 auto idx = get_index(obj);
                 if (idx != -1) {
                     _objects.erase(_objects.begin() + i);
-                    get_node(idx).insert(obj);
+                    _nodes->at(idx).insert(obj);
                 } else {
                     i++;
                 }
@@ -146,7 +144,7 @@ public:
         auto idx = get_index(item);
 
         if (idx != -1 && _nodes != nullptr) {
-            const auto& node = get_node(idx);
+            const auto& node = _nodes->at(idx);
             const auto& bounds = node._bounds;
             const auto rect = item.get().rect();
             if (bounds.is_inside(rect)) {

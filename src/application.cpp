@@ -37,7 +37,7 @@ unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius
     indices.emplace_back(1);
     indices.emplace_back(triangleFanCount);
 
-    return render.createMesh(vertices, indices);
+    return render.create_mesh(vertices, indices);
 }
 
 void Application::render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::CollisionQuadtree& tree) {
@@ -76,7 +76,7 @@ void Application::render() {
     ballInstances.clear();
     ballInstances.reserve(world.entities().size());
 
-    renderer->newFrame();
+    renderer->new_frame();
     for (auto ball : world.entities()) {
         gfx::Instance instance;
         instance.position = ball->get_position();
@@ -89,7 +89,7 @@ void Application::render() {
         }
         ballInstances.emplace_back(instance);
     }
-    renderer->drawMesh(ballMesh, ballInstances.data(), ballInstances.size());
+    renderer->draw_mesh(ballMesh, ballInstances.data(), ballInstances.size());
     render_quadtree_bounds(*renderer, world.quadtree());
 }
 
@@ -165,7 +165,7 @@ bool Application::init() {
 
 void Application::quit() {
     if (renderer) {
-        renderer->deleteMesh(ballMesh);
+        renderer->delete_mesh(ballMesh);
         renderer.reset();  // ensure the renderer is deleted before terminating glfw
     }
 }

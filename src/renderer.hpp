@@ -48,13 +48,13 @@ namespace gfx {
 
         void viewport(int width, int height);
 
-        void newFrame();
+        void new_frame();
 
-        unsigned createMesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
-        void deleteMesh(unsigned mesh);
+        unsigned create_mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+        void delete_mesh(unsigned mesh);
 
-        void drawMesh(unsigned mesh, const Instance& instance);
-        void drawMesh(unsigned mesh, const Instance* instances, std::size_t numInstance);
+        void draw_mesh(unsigned mesh, const Instance& instance);
+        void draw_mesh(unsigned mesh, const Instance* instances, std::size_t numInstance);
         void draw_unfilled_rect(Color color, const Rect<float>& rect);
     };
 }
