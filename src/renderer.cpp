@@ -46,7 +46,7 @@ unsigned Renderer::createMesh(const std::vector<Vertex>& vertices) {
         return 0;
     }
     glNewList(list, GL_COMPILE);
-        glBegin(GL_TRIANGLE_FAN);
+        glBegin(GL_TRIANGLES);
             for (auto vertex : vertices) {
                 glVertex2f(vertex.position.x, vertex.position.y);
             }

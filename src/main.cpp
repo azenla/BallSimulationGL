@@ -12,19 +12,22 @@
 
 static std::unique_ptr<BallSimulator::World> world;
 
-static constexpr int TriangleAmount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
-static constexpr float TwicePi = 2.0f * 3.1415926f;
-static constexpr float CircleMagicConstant = TwicePi / TriangleAmount;
-
 void generate_filled_circle(std::vector<gfx::Vertex>& out, float radius = 1.0f) {
-    out.push_back({ vec2f::zero() });
-    for (auto i = 0; i <= TriangleAmount; i++) {
-        out.push_back({{
-            static_cast<float>(radius * cos(i * CircleMagicConstant)),
-            static_cast<float>(radius * sin(i * CircleMagicConstant))
-        }});
+    constexpr int triangleFanCount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
+    constexpr float twoPi = 2.0f * 3.1415926f;
+    constexpr float circleSegmentTheta = twoPi / triangleFanCount;
+
+    vec2f last(1.0f, 0.0f);
+    for (auto i = 1; i <= triangleFanCount; i++) {
+        vec2f v(
+            radius * std::cos(i * circleSegmentTheta),
+            radius * std::sin(i * circleSegmentTheta)
+        );
+        out.push_back({ vec2f::zero() });
+        out.push_back({ v });
+        out.push_back({ last });
+        last = v;
     }
-    glEnd();
 }
 
 unsigned ballMesh = 0;
