@@ -1,73 +1,54 @@
 #include "simulator.hpp"
 #include "world.hpp"
 #include "ball.hpp"
+#include "renderer.hpp"
 
 #include <iostream>
 #include <chrono>
+#include <vector>
 #include <thread>
 
-extern "C" {
-    #include <GLFW/glfw3.h>
-}
+#include <GLFW/glfw3.h>
 
-std::unique_ptr<BallSimulator::World> world;
+static std::unique_ptr<BallSimulator::World> world;
 
 static constexpr int TriangleAmount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
 static constexpr float TwicePi = 2.0f * 3.1415926f;
 static constexpr float CircleMagicConstant = TwicePi / TriangleAmount;
 
-static float CircleDrawingCacheCos[GL_DRAW_CIRCLE_TRIANGLE_AMOUNT + 1] = {};
-static float CircleDrawingCacheSin[GL_DRAW_CIRCLE_TRIANGLE_AMOUNT + 1] = {};
-
-static void fulfill_drawing_cache() {
+void generate_filled_circle(std::vector<gfx::Vertex>& out, float radius = 1.0f) {
+    out.push_back({ vec2f::zero() });
     for (auto i = 0; i <= TriangleAmount; i++) {
-        CircleDrawingCacheCos[i] = cos(i * CircleMagicConstant);
-    }
-
-    for (auto i = 0; i <= TriangleAmount; i++) {
-        CircleDrawingCacheSin[i] = sin(i * CircleMagicConstant);
-    }
-}
-
-void draw_filled_circle(GLfloat x, GLfloat y, GLfloat radius) {
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex2f(x, y);
-    for (auto i = 0; i <= TriangleAmount; i++) {
-        glVertex2f(
-            static_cast<GLfloat>(x + radius * CircleDrawingCacheCos[i]),
-            static_cast<GLfloat>(y + radius * CircleDrawingCacheSin[i])
-        );
+        out.push_back({{
+            static_cast<float>(radius * cos(i * CircleMagicConstant)),
+            static_cast<float>(radius * sin(i * CircleMagicConstant))
+        }});
     }
     glEnd();
 }
 
-void draw_unfilled_rect(float x1, float y1, float x2, float y2) {
-    glBegin(GL_LINE_LOOP);
-    glVertex2f(x1, y1);
-    glVertex2f(x2, y1);
-    glVertex2f(x2, y2);
-    glVertex2f(x1, y2);
-    glEnd();
-}
-
+unsigned ballMesh = 0;
 int lastTimeBase = 0;
 int frames = 0;
 double fps = 60.0;
 double lastFrameTime = 0.0;
 
-void render_quadtree_bounds(const BallSimulator::CollisionQuadtree& tree) {
-    auto bounds = tree.bounds();
-
-    glColor3f(0.0f, 0.0f, 1.0f);
-    draw_unfilled_rect(bounds.x, bounds.y, bounds.x + bounds.w, bounds.y + bounds.h);
-
-    tree.for_each_node(render_quadtree_bounds);
+void render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::CollisionQuadtree& tree) {
+    static auto* pRender = &render;
+    static void (*inner)(const BallSimulator::CollisionQuadtree&) =
+            [](const BallSimulator::CollisionQuadtree& innerTree) {
+        auto bounds = innerTree.bounds();
+        gfx::Rect<float> rect = { bounds.x, bounds.y, bounds.x + bounds.w, bounds.y + bounds.h };
+        pRender->draw_unfilled_rect(gfx::Color::blue(), rect);
+        innerTree.for_each_node<decltype(inner)>(inner);
+    };
+    inner(tree);
 }
 
-void render() {
+void render(gfx::Renderer& render) {
     frames++;
-    auto glTime = glfwGetTime();
-    auto elapsed = static_cast<int>(glTime * 1000);
+    const auto currentTime = glfwGetTime();
+    auto elapsed = static_cast<int>(currentTime * 1000);
 
     if (elapsed - lastTimeBase > 1000) {
         fps = frames * 1000.0 / (elapsed - lastTimeBase);
@@ -76,44 +57,46 @@ void render() {
         std::cout << "FPS: " << fps << std::endl;
     }
 
-    double deltaTime = glTime - lastFrameTime;
+    double deltaTime = currentTime - lastFrameTime;
     BallSimulator::DoQuadtreeCollisionDetection(*world, static_cast<float>(deltaTime));
-    lastFrameTime = glTime;
+    lastFrameTime = currentTime;
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    static std::vector<gfx::Instance> ballInstances;
+    ballInstances.clear();
+    ballInstances.reserve(world->entities().size());
+
+    render.newFrame();
     for (auto ball : world->entities()) {
-        vec2f pos = ball->get_position();
+        gfx::Instance instance;
+        instance.position = ball->get_position();
+        instance.scale = ball->radius();
         if (ball->collisionFlash > 0) {
-            glColor3f(1.0, 1.0, 0.0);
+            instance.color = gfx::Color::yellow();
             --ball->collisionFlash;
         } else {
-            glColor3f(1.0, 0.0, 0.0);
+            instance.color = gfx::Color::red();
         }
-        draw_filled_circle(pos.x, pos.y, ball->radius());
+        ballInstances.emplace_back(instance);
     }
-
-    render_quadtree_bounds(world->quadtree());
+    render.drawMesh(ballMesh, ballInstances.data(), ballInstances.size());
+    render_quadtree_bounds(render, world->quadtree());
 }
 
-void init(GLFWwindow* window) {
+void init(GLFWwindow* window, gfx::Renderer& render) {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glColor3f(1.0, 0.0, 0.0);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    std::vector<gfx::Vertex> ballVerts;
+    generate_filled_circle(ballVerts);
+    ballMesh = render.createMesh(ballVerts);
 }
 
 void reshape(GLFWwindow* window, int w, int h) {
     std::cout << "Window Size: " << w << "x" << h << std::endl;
 
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glOrtho(0, w, h, 0, -1, 1);
-
-    world->resize(float(w), float(h));
+    auto& render = *reinterpret_cast<gfx::Renderer*>(glfwGetWindowUserPointer(window));
+    render.viewport(w, h);
+    world->resize(static_cast<float>(w), static_cast<float>(h));
     world->scatter();
 }
 
@@ -137,8 +120,6 @@ void handle_error(int code, const char* msg) {
 }
 
 int main(int argc, char** argv) {
-    fulfill_drawing_cache();
-
     srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
         (std::chrono::system_clock::now().time_since_epoch()).count()));
 
@@ -185,18 +166,24 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+    auto renderer = std::make_unique<gfx::Renderer>(gfx::Color::black());
+    glfwSetWindowUserPointer(window, &renderer);
+
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
     reshape(window, w, h);
     glfwSetFramebufferSizeCallback(window, reshape);
 
-    init(window);
+    init(window, *renderer);
 
     while (glfwWindowShouldClose(window) == 0) {
-        render();
+        render(*renderer);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    renderer->deleteMesh(ballMesh);
+    renderer.reset();  // ensure the renderer is deleted before terminating glfw
 
     glfwTerminate();
 

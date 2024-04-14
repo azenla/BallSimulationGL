@@ -13,7 +13,8 @@ class Quadtree {
     std::vector<const Rectangle<T>*> _objects;
     std::vector<const Rectangle<T>*> _stuck;
 
-    Quadtree<T, MaxObjects, MaxLevels>* _nodes[4] = {nullptr, nullptr, nullptr, nullptr};
+    typedef Quadtree<T, MaxObjects, MaxLevels> NodeType;
+    NodeType* _nodes[4] = {nullptr, nullptr, nullptr, nullptr};
 
     int _level;
     Rectangle<T> _bounds;
@@ -180,10 +181,11 @@ public:
         }
     }
 
-    void for_each_node(void func(const Quadtree<T, MaxObjects, MaxLevels>& tree)) const {
+    template <typename F>
+    void for_each_node(F func) const {
         for (auto i = 0; i < 4; i++) {
             if (_nodes[i] != nullptr) {
-                func(*_nodes[i]);
+                func(const_cast<const NodeType&>(*_nodes[i]));
             }
         }
     }
