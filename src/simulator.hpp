@@ -19,6 +19,6 @@ namespace BallSimulator {
 
     typedef Quadtree<Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> CollisionQuadtree;
 
-    void DoQuadtreeCollisionDetection(World& world, float divisor);
-    void DoSimpleCollisionDetection(World& world, float divisor);
+    void DoQuadtreeCollisionDetection(World& world, float deltaTime);
+    void DoSimpleCollisionDetection(World& world, float deltaTime);
 }

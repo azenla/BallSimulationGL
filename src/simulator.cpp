@@ -5,7 +5,8 @@
 #include <random>
 #include <iostream>
 
-void BallSimulator::DoQuadtreeCollisionDetection(World& world, float divisor) {
+void BallSimulator::DoQuadtreeCollisionDetection(World& world, float deltaTime) {
+    deltaTime *= SIMULATION_TIMESCALE;
     auto& tree = world.quadtree();
 
     tree.clear();
@@ -15,8 +16,8 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float divisor) {
     static std::vector<const Rectangle<Ball*>*> array;
     array.resize(entities.size());
     for (auto ball : entities) {
-        ball->apply_gravity(world, divisor);
-        ball->apply_velocity(divisor);
+        ball->apply_gravity(world, deltaTime);
+        ball->apply_velocity(deltaTime);
 
         const auto& rect = ball->rect();
         tree.insert(rect);
@@ -42,12 +43,13 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float divisor) {
     }
 }
 
-void BallSimulator::DoSimpleCollisionDetection(World& world, float divisor) {
+void BallSimulator::DoSimpleCollisionDetection(World& world, float deltaTime) {
+    deltaTime *= SIMULATION_TIMESCALE;
     auto& entities = world.entities();
 
     for (auto ball : entities) {
-        ball->apply_gravity(world, divisor);
-        ball->apply_velocity(divisor);
+        ball->apply_gravity(world, deltaTime);
+        ball->apply_velocity(deltaTime);
     }
 
     for (unsigned long i = 0; i < entities.size(); i++) {

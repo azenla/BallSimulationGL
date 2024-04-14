@@ -33,8 +33,8 @@ namespace BallSimulator {
 
         bool collide(Ball& other);
 
-        void apply_gravity(World& world, float divisor);
-        void apply_velocity(float divisor);
+        void apply_gravity(World& world, float deltaTime);
+        void apply_velocity(float deltaTime);
         void apply_world_boundary(const World& world);
     };
 }

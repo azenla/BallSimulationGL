@@ -76,11 +76,9 @@ void render() {
         std::cout << "FPS: " << fps << std::endl;
     }
 
-    auto micros = glTime * 1000 * 1000;
-    auto timeHasPassed = micros - lastFrameTime;
-    auto divisor = float(timeHasPassed) / 1000.0f / 2;
-    BallSimulator::DoQuadtreeCollisionDetection(*world, divisor);
-    lastFrameTime = micros;
+    double deltaTime = glTime - lastFrameTime;
+    BallSimulator::DoQuadtreeCollisionDetection(*world, static_cast<float>(deltaTime));
+    lastFrameTime = glTime;
 
     glClear(GL_COLOR_BUFFER_BIT);
     for (auto ball : world->entities()) {
@@ -139,6 +137,7 @@ int main(int argc, char** argv) {
 
     srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
         (std::chrono::system_clock::now().time_since_epoch()).count()));
+
     world = std::make_unique<BallSimulator::World>(1024, 1024);
     world->change_gravity(0.0f);
     auto state = 10.0f;
