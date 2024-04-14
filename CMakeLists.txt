@@ -20,6 +20,7 @@ set_property(TARGET BallSimulator PROPERTY CXX_STANDARD 14)
 
 add_executable(BallSimulatorGl
     src/renderer.cpp src/renderer.hpp
+    src/application.cpp src/application.hpp
     src/main.cpp)
 set_property(TARGET BallSimulatorGl PROPERTY CXX_STANDARD 14)
 target_link_libraries(BallSimulatorGl BallSimulator glfw OpenGL::GL)
