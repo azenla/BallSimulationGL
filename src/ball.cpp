@@ -67,19 +67,7 @@ void Ball::apply_gravity(World& world, float deltaTime) {
 }
 
 void Ball::apply_velocity(float deltaTime) {
-    if (std::abs(_velocity.x) < Epsilon) {
-        _velocity.x = 0.0f;
-    } else {
-        auto delta = _velocity.x * deltaTime;
-        set_position(_position.x + delta, _position.y);
-    }
-
-    if (std::abs(_velocity.y) < Epsilon) {
-        _velocity.y = 0.0f;
-    } else {
-        auto delta = _velocity.y * deltaTime;
-        set_position(_position.x, _position.y + delta);
-    }
+    set_position(_position + _velocity * deltaTime);
 }
 
 void Ball::apply_world_boundary(const World& world) {
