@@ -14,7 +14,7 @@ namespace BallSimulator {
         Rectangle<Ball*> _rect;
 
     public:
-        bool isInsideCollision = false;
+        int collisionFlash = 0;
 
         Ball(float mass, float radius, const vec2f& position = vec2f::zero(), const vec2f& velocity = vec2f::zero());
 
@@ -31,8 +31,7 @@ namespace BallSimulator {
 
         inline constexpr const Rectangle<Ball*>& rect() const { return _rect; }
 
-        bool collides(const Ball& other) const;
-        void collide(Ball& other);
+        bool collide(Ball& other);
 
         void apply_gravity(World& world, float divisor);
         void apply_velocity(float divisor);

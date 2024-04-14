@@ -28,17 +28,13 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float divisor) {
         auto ballA = rect->value;
         tree.retrieve(queued, *rect);
 
-        auto colliding = false;
         for (auto bb : queued) {
             const auto& ballB = bb->value;
 
-            if (ballB && ballB != ballA && ballA->collides(*ballB)) {
-                ballA->collide(*ballB);
-                colliding = true;
+            if (ballB && ballB != ballA && ballA->collide(*ballB)) {
+                ballA->collisionFlash = ballB->collisionFlash = COLLISION_FLASH_DURATION;
             }
         }
-
-        ballA->isInsideCollision = colliding;
 
         ballA->apply_world_boundary(world);
 
@@ -56,17 +52,14 @@ void BallSimulator::DoSimpleCollisionDetection(World& world, float divisor) {
 
     for (unsigned long i = 0; i < entities.size(); i++) {
         auto b = entities.at(i);
-        auto colliding = false;
 
         for (auto j = i + 1; j < entities.size(); j++) {
             auto bb = entities.at(j);
-            if (b->collides(*bb)) {
-                colliding = true;
-                b->collide(*bb);
+            if (b->collide(*bb)) {
+                b->collisionFlash = bb->collisionFlash = COLLISION_FLASH_DURATION;
             }
         }
 
-        b->isInsideCollision = colliding;
         b->apply_world_boundary(world);
     }
 }

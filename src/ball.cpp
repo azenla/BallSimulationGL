@@ -18,50 +18,46 @@ void Ball::set_position(const vec2f& newPos) {
     _rect.y = newPos.y;
 }
 
-bool Ball::collides(const Ball& other) const {
-    auto diff = _position - other._position;
-    auto totalRadius = radius() + other.radius();
-    auto radiusSquared = totalRadius * totalRadius;
-    auto distanceSquared = diff.length();
-
-    return radiusSquared - diff.length2() > Epsilon;
-}
-
-void Ball::collide(Ball& other) {
-    auto totalRadius = radius() + other.radius();
-    auto delta = _position - other.get_position();
-    auto distance = delta.length();
-
-    if (abs(totalRadius * totalRadius - vec2f::dot(delta, delta)) < Epsilon) {
-        return;
+bool Ball::collide(Ball& other) {
+    float totalRadius = radius() + other.radius();
+    vec2f delta = get_position() - other.get_position();
+    float distance2 = delta.length2();
+    if (totalRadius * totalRadius < distance2) {
+        return false;
     }
 
-    auto isOnTopOfEachOther = abs(distance) <= Epsilon;
-    if (isOnTopOfEachOther) {
-        distance = totalRadius - 1.0f;
-        delta = vec2f(totalRadius, 0.0f);
-    }
-    auto minimumTranslationDistance = delta * ((totalRadius - distance) / distance);
+    // calculate intersection depth and normal
+    float distance = std::sqrt(distance2);
+    vec2f normal = delta / distance;
+    float intersectDepth = totalRadius - distance;
+    vec2f pushDirection = normal * intersectDepth + Epsilon;
 
-    auto inverseMassA = 1.0f / mass();
-    auto inverseMassB = 1.0f / other.mass();
-    auto inverseMassTotal = inverseMassA + inverseMassB;
+    float inverseMassA = 1.0f / mass();
+    float inverseMassB = 1.0f / other.mass();
+#if 1
+    const float inverseMassScale = 1.0f / (inverseMassA + inverseMassB);
+#else
+    constexpr float inverseMassScale = 1.0f;  // disabling rescaling induces losses and may be more realistic
+#endif
 
-    set_position(_position + minimumTranslationDistance * (inverseMassA / inverseMassTotal));
-    other.set_position(other.get_position() - minimumTranslationDistance * (inverseMassB / inverseMassTotal));
+    // push balls out of each other
+    set_position(_position + pushDirection * (inverseMassA * inverseMassScale));
+    other.set_position(other.get_position() - pushDirection * (inverseMassB * inverseMassScale));
 
     auto impactSpeed = _velocity - other._velocity;
-    auto velocityNumber = vec2f::dot(impactSpeed, minimumTranslationDistance.normalize());
+    auto velocityNumber = vec2f::dot(impactSpeed, normal);
 
     if (velocityNumber > 0.0f) {
-        return;
+        return true;
     }
 
-    auto impulseFactor = -2.0f * velocityNumber / inverseMassTotal;
-    vec2f impulse = minimumTranslationDistance.normalize() * impulseFactor * IMPULSE_MULTIPLIER;
-
+    // compute and apply velocity response
+    auto impulseFactor = -2.0f * velocityNumber * inverseMassScale * IMPULSE_MULTIPLIER;
+    vec2f impulse = normal * impulseFactor;
     _velocity += impulse * inverseMassA;
     other.set_velocity(other._velocity - impulse * inverseMassB);
+
+    return true;
 }
 
 void Ball::apply_gravity(World& world, float divisor) {
