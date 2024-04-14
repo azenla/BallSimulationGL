@@ -34,7 +34,7 @@ bool Ball::collide(Ball& other) {
 
     float inverseMassA = 1.0f / mass();
     float inverseMassB = 1.0f / other.mass();
-#if 1
+#ifdef SIMULATION_LOSSES
     const float inverseMassScale = 1.0f / (inverseMassA + inverseMassB);
 #else
     constexpr float inverseMassScale = 1.0f;  // disabling rescaling induces losses and may be more realistic
@@ -71,19 +71,29 @@ void Ball::apply_velocity(float deltaTime) {
 }
 
 void Ball::apply_world_boundary(const World& world) {
+#ifdef SIMULATION_LOSSES
+    const float inverseMass = 1.0f / mass();
+#else
+    constexpr float inverseMass = 1.0f;
+#endif
+
     if (_position.x - _radius < Epsilon) {
         set_position(_radius, _position.y);
-        _velocity.x = -_velocity.x;
+        _velocity.x = -_velocity.x * inverseMass;
+        collisionFlash = COLLISION_FLASH_DURATION;
     } else if (_position.x + _radius > world.width()) {
         set_position(world.width() - _radius, _position.y);
-        _velocity.x = -_velocity.x;
+        _velocity.x = -_velocity.x * inverseMass;
+        collisionFlash = COLLISION_FLASH_DURATION;
     }
 
     if (_position.y - _radius < Epsilon) {
         set_position(_position.x, _radius);
-        _velocity.y = -_velocity.y;
+        _velocity.y = -_velocity.y * inverseMass;
+        collisionFlash = COLLISION_FLASH_DURATION;
     } else if (_position.y + _radius > world.height()) {
         set_position(_position.x, world.height() - _radius);
-        _velocity.y = -_velocity.y;
+        _velocity.y = -_velocity.y * inverseMass;
+        collisionFlash = COLLISION_FLASH_DURATION;
     }
 }
