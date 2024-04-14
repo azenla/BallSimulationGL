@@ -12,7 +12,7 @@ namespace BallSimulator {
 
     const float RealWorldGravity = 9.18f;
 
-    const float RealWorldScale = 10.0f;
+    const float RealWorldScale = 0.1f;
     const float DefaultGravity = RealWorldScale * RealWorldGravity;
 
     const float Epsilon = PHYSICS_EPSILON;

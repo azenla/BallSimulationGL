@@ -31,10 +31,8 @@ namespace BallSimulator {
 
         inline constexpr const Rectangle<Ball*>& rect() const { return _rect; }
 
+        void update(const World& world, float deltaTime);
         bool collide(Ball& other);
-
-        void apply_gravity(World& world, float deltaTime);
-        void apply_velocity(float deltaTime);
         void apply_world_boundary(const World& world);
     };
 }

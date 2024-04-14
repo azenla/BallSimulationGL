@@ -16,8 +16,7 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float deltaTime) 
     static std::vector<const Rectangle<Ball*>*> array;
     array.resize(entities.size());
     for (auto ball : entities) {
-        ball->apply_gravity(world, deltaTime);
-        ball->apply_velocity(deltaTime);
+        ball->update(world, deltaTime);
 
         const auto& rect = ball->rect();
         tree.insert(rect);
@@ -31,9 +30,8 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float deltaTime) 
 
         for (auto bb : queued) {
             const auto& ballB = bb->value;
-
-            if (ballB && ballB != ballA && ballA->collide(*ballB)) {
-                ballA->collisionFlash = ballB->collisionFlash = COLLISION_FLASH_DURATION;
+            if (ballB && ballB != ballA) {
+                ballA->collide(*ballB);
             }
         }
 
@@ -48,18 +46,14 @@ void BallSimulator::DoSimpleCollisionDetection(World& world, float deltaTime) {
     auto& entities = world.entities();
 
     for (auto ball : entities) {
-        ball->apply_gravity(world, deltaTime);
-        ball->apply_velocity(deltaTime);
+        ball->update(world, deltaTime);
     }
 
     for (unsigned long i = 0; i < entities.size(); i++) {
         auto b = entities.at(i);
 
         for (auto j = i + 1; j < entities.size(); j++) {
-            auto bb = entities.at(j);
-            if (b->collide(*bb)) {
-                b->collisionFlash = bb->collisionFlash = COLLISION_FLASH_DURATION;
-            }
+            b->collide(*entities.at(j));
         }
 
         b->apply_world_boundary(world);

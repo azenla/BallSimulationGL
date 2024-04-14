@@ -18,6 +18,11 @@ void Ball::set_position(const vec2f& newPos) {
     _rect.y = newPos.y;
 }
 
+void Ball::update(const World& world, float deltaTime) {
+    _velocity.y += world.gravity() * deltaTime;
+    set_position(_position + _velocity * deltaTime);
+}
+
 bool Ball::collide(Ball& other) {
     float totalRadius = radius() + other.radius();
     vec2f delta = get_position() - other.get_position();
@@ -25,6 +30,8 @@ bool Ball::collide(Ball& other) {
     if (totalRadius * totalRadius < distance2) {
         return false;
     }
+
+    other.collisionFlash = collisionFlash = COLLISION_FLASH_DURATION;
 
     // calculate intersection depth and normal
     float distance = std::sqrt(distance2);
@@ -34,7 +41,7 @@ bool Ball::collide(Ball& other) {
 
     float inverseMassA = 1.0f / mass();
     float inverseMassB = 1.0f / other.mass();
-#ifdef SIMULATION_LOSSES
+#ifndef SIMULATION_LOSSES
     const float inverseMassScale = 1.0f / (inverseMassA + inverseMassB);
 #else
     constexpr float inverseMassScale = 1.0f;  // disabling rescaling induces losses and may be more realistic
@@ -58,16 +65,6 @@ bool Ball::collide(Ball& other) {
     other.set_velocity(other._velocity - impulse * inverseMassB);
 
     return true;
-}
-
-void Ball::apply_gravity(World& world, float deltaTime) {
-    if (std::abs(world.gravity()) > Epsilon) {
-        _velocity.y += world.gravity() * deltaTime;
-    }
-}
-
-void Ball::apply_velocity(float deltaTime) {
-    set_position(_position + _velocity * deltaTime);
 }
 
 void Ball::apply_world_boundary(const World& world) {

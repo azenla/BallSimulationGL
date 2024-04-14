@@ -12,9 +12,9 @@ extern "C" {
 
 std::unique_ptr<BallSimulator::World> world;
 
-static const int TriangleAmount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
-static const float TwicePi = 2.0f * 3.1415926f;
-static const float CircleMagicConstant = TwicePi / TriangleAmount;
+static constexpr int TriangleAmount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
+static constexpr float TwicePi = 2.0f * 3.1415926f;
+static constexpr float CircleMagicConstant = TwicePi / TriangleAmount;
 
 static float CircleDrawingCacheCos[GL_DRAW_CIRCLE_TRIANGLE_AMOUNT + 1] = {};
 static float CircleDrawingCacheSin[GL_DRAW_CIRCLE_TRIANGLE_AMOUNT + 1] = {};
@@ -139,7 +139,9 @@ int main(int argc, char** argv) {
         (std::chrono::system_clock::now().time_since_epoch()).count()));
 
     world = std::make_unique<BallSimulator::World>(1024, 1024);
-    world->change_gravity(0.0f);
+#ifdef SIMULATION_GRAVITY
+    world->change_gravity(SIMULATION_GRAVITY);
+#endif
     auto state = 10.0f;
     for (auto i = 1; i <= 200; i++) {
         auto ball = new BallSimulator::Ball(3.0f, 10.0f);
