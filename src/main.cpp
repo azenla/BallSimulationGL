@@ -10,40 +10,68 @@
 
 #include <GLFW/glfw3.h>
 
-static std::unique_ptr<BallSimulator::World> world;
+class Application final {
+    GLFWwindow* window = nullptr;
+    std::unique_ptr<gfx::Renderer> renderer;
 
-void generate_filled_circle(std::vector<gfx::Vertex>& vertOut, std::vector<uint16_t>& idxOut, float radius = 1.0f) {
+    int frameWidth, frameHeight;
+    vec2d contentScale;
+
+    BallSimulator::World world = BallSimulator::World(1024, 1024);
+    unsigned ballMesh = 0;
+    int lastTimeBase = 0;
+    int frames = 0;
+    double fps = 60.0;
+    double lastFrameTime = 0.0;
+
+    static unsigned generate_filled_circle(gfx::Renderer& render, float radius = 1.0f);
+    static void render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::CollisionQuadtree& tree);
+
+    bool init();
+    void quit();
+
+    void render();
+
+    void resize();
+    void mouse(int button, int action);
+
+public:
+    Application() = default;
+    ~Application() = default;
+
+    int run();
+};
+
+unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius) {
     constexpr int triangleFanCount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
     constexpr float twoPi = 2.0f * 3.1415926f;
     constexpr float circleSegmentTheta = twoPi / triangleFanCount;
 
-    vertOut.reserve(triangleFanCount + 1);
-    idxOut.reserve(triangleFanCount * 3);
+    std::vector<gfx::Vertex> vertices;
+    std::vector<uint16_t> indices;
+    vertices.reserve(triangleFanCount + 1);
+    indices.reserve(triangleFanCount * 3);
 
-    vertOut.push_back({ vec2f::zero() });
-    vertOut.push_back({ vec2f(radius, 0.0f) });
+    vertices.push_back({ vec2f::zero() });
+    vertices.push_back({ vec2f(radius, 0.0f) });
     for (auto i = 1; i < triangleFanCount; i++) {
         vec2f v(
             radius * std::cos(i * circleSegmentTheta),
             radius * std::sin(i * circleSegmentTheta)
         );
-        vertOut.push_back({ v });
-        idxOut.emplace_back(0);
-        idxOut.emplace_back(i + 1);
-        idxOut.emplace_back(i);
+        vertices.push_back({ v });
+        indices.emplace_back(0);
+        indices.emplace_back(i + 1);
+        indices.emplace_back(i);
     }
-    idxOut.emplace_back(0);
-    idxOut.emplace_back(1);
-    idxOut.emplace_back(triangleFanCount);
+    indices.emplace_back(0);
+    indices.emplace_back(1);
+    indices.emplace_back(triangleFanCount);
+
+    return render.createMesh(vertices, indices);
 }
 
-unsigned ballMesh = 0;
-int lastTimeBase = 0;
-int frames = 0;
-double fps = 60.0;
-double lastFrameTime = 0.0;
-
-void render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::CollisionQuadtree& tree) {
+void Application::render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::CollisionQuadtree& tree) {
     static auto* pRender = &render;
     static void (*inner)(const BallSimulator::CollisionQuadtree&) =
             [](const BallSimulator::CollisionQuadtree& innerTree) {
@@ -55,7 +83,7 @@ void render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::Collisio
     inner(tree);
 }
 
-void render(gfx::Renderer& render) {
+void Application::render() {
     frames++;
     const auto currentTime = glfwGetTime();
     auto elapsed = static_cast<int>(currentTime * 1000);
@@ -64,19 +92,19 @@ void render(gfx::Renderer& render) {
         fps = frames * 1000.0 / (elapsed - lastTimeBase);
         lastTimeBase = elapsed;
         frames = 0;
-        std::cout << "FPS: " << fps << std::endl;
+        std::cerr << "FPS: " << fps << std::endl;
     }
 
     double deltaTime = currentTime - lastFrameTime;
-    BallSimulator::DoQuadtreeCollisionDetection(*world, static_cast<float>(deltaTime));
+    BallSimulator::DoQuadtreeCollisionDetection(world, static_cast<float>(deltaTime));
     lastFrameTime = currentTime;
 
     static std::vector<gfx::Instance> ballInstances;
     ballInstances.clear();
-    ballInstances.reserve(world->entities().size());
+    ballInstances.reserve(world.entities().size());
 
-    render.newFrame();
-    for (auto ball : world->entities()) {
+    renderer->newFrame();
+    for (auto ball : world.entities()) {
         gfx::Instance instance;
         instance.position = ball->get_position();
         instance.scale = ball->radius();
@@ -88,32 +116,96 @@ void render(gfx::Renderer& render) {
         }
         ballInstances.emplace_back(instance);
     }
-    render.drawMesh(ballMesh, ballInstances.data(), ballInstances.size());
-    render_quadtree_bounds(render, world->quadtree());
+    renderer->drawMesh(ballMesh, ballInstances.data(), ballInstances.size());
+    render_quadtree_bounds(*renderer, world.quadtree());
 }
 
-void init(GLFWwindow* window, gfx::Renderer& render) {
-    int w, h;
-    glfwGetFramebufferSize(window, &w, &h);
+bool Application::init() {
+    srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
+        (std::chrono::system_clock::now().time_since_epoch()).count()));
 
-    std::vector<gfx::Vertex> ballVerts;
-    std::vector<uint16_t> ballIndices;
-    generate_filled_circle(ballVerts, ballIndices);
-    ballMesh = render.createMesh(ballVerts, ballIndices);
+    window = glfwCreateWindow(1024, 1024, "Ball Simulation", nullptr, nullptr);
+    if (window == nullptr) {
+        return false;
+    }
+
+    // setup callback handlers
+    glfwSetErrorCallback([](int code, const char* msg) {
+        std::cerr << "GLFW Error: (code = " << code << "): " << msg << std::endl;
+    });
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int) -> void {
+        void* user = glfwGetWindowUserPointer(window);
+        auto& app = *reinterpret_cast<Application*>(user);
+        app.mouse(button, action);
+    });
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int w, int h) -> void {
+        void* user = glfwGetWindowUserPointer(window);
+        auto& app = *reinterpret_cast<Application*>(user);
+
+        app.frameWidth  = w;
+        app.frameHeight = h;
+        app.resize();
+    });
+
+    // setup OpenGL context
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+    // work out the content scale for scaling mouse input
+    const auto calculate_content_size_and_scale = [this]() {
+        int winWidth, winHeight;
+        glfwGetWindowSize(window, &winWidth, &winHeight);
+        glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
+        if (winWidth > 0 && winHeight > 0 && frameWidth > 0 && frameHeight > 0) {
+            contentScale = vec2d(frameWidth, frameHeight) / vec2d(winWidth, winHeight);
+        }
+    };
+
+    // setup rendering
+    auto renderer = std::make_unique<gfx::Renderer>(gfx::Color::black());
+    calculate_content_size_and_scale();
+    resize();
+
+    // setup world
+#ifdef SIMULATION_GRAVITY
+    world.change_gravity(SIMULATION_GRAVITY);
+#endif
+    auto state = 10.0f;
+    for (auto i = 1; i <= 200; i++) {
+        BallSimulator::Ball ball(3.0f, 10.0f);
+        auto stateNegate = -state;
+        ball.set_velocity(state, stateNegate);
+        world.add(std::move(ball));
+        state = -state;
+    }
+    world.scatter();
+
+    ballMesh = generate_filled_circle(*renderer);
+    if (ballMesh == 0) {
+        return false;
+    }
+
+    return true;
 }
 
-void reshape(GLFWwindow* window, int w, int h) {
-    std::cout << "Window Size: " << w << "x" << h << std::endl;
-
-    auto& render = *reinterpret_cast<gfx::Renderer*>(glfwGetWindowUserPointer(window));
-    render.viewport(w, h);
-    world->resize(static_cast<float>(w), static_cast<float>(h));
-    world->scatter();
+void Application::quit() {
+    if (renderer) {
+        renderer->deleteMesh(ballMesh);
+        renderer.reset();  // ensure the renderer is deleted before terminating glfw
+    }
 }
 
-static vec2d contentScale = { 1, 1 };
+void Application::resize() {
+    std::cerr << "Window Size: " << frameWidth << "x" << frameHeight << std::endl;
 
-void mouse(GLFWwindow* window, int button, int action, int mods) {
+    renderer->viewport(frameWidth, frameHeight);
+    world.resize(static_cast<float>(frameWidth), static_cast<float>(frameHeight));
+    world.scatter();
+}
+
+void Application::mouse(int button, int action) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         vec2d cursorPos;
         glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
@@ -122,81 +214,35 @@ void mouse(GLFWwindow* window, int button, int action, int mods) {
         BallSimulator::Ball ball(5.0f, 20.0f);
         ball.set_position(static_cast<vec2f>(cursorPos));
         ball.set_velocity(vec2f(10.0f, 10.0f));
-        world->add(std::move(ball));
+        world.add(std::move(ball));
     }
 }
 
-void handle_error(int code, const char* msg) {
-    std::cerr << "GLFW Error: (code = " << code << "): " << msg << std::endl;
-}
-
-int main(int argc, char** argv) {
-    srand(static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::seconds>
-        (std::chrono::system_clock::now().time_since_epoch()).count()));
-
-    world = std::make_unique<BallSimulator::World>(1024, 1024);
-#ifdef SIMULATION_GRAVITY
-    world->change_gravity(SIMULATION_GRAVITY);
-#endif
-    auto state = 10.0f;
-    for (auto i = 1; i <= 200; i++) {
-        auto ball = new BallSimulator::Ball(3.0f, 10.0f);
-        auto stateNegate = -state;
-        ball->set_velocity(state, stateNegate);
-        world->add(ball);
-        state = -state;
-    }
-    world->scatter();
-
+int Application::run() {
     if (glfwInit() == 0) {
         return 1;
     }
 
-    glfwSetErrorCallback(handle_error);
-
-    auto window = glfwCreateWindow(1024, 1024, "Ball Simulation", nullptr, nullptr);
-    if (window == nullptr) {
+    if (!init()) {
+        quit();
         glfwTerminate();
         return 1;
     }
 
-    // work out the content scale for scaling mouse input
-    {
-        int winWidth, winHeight, frameWidth, frameHeight;
-        glfwGetWindowSize(window, &winWidth, &winHeight);
-        glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
-        if (winWidth > 0 && winHeight > 0 && frameWidth > 0 && frameHeight > 0) {
-            contentScale = {
-                static_cast<double>(frameWidth) / static_cast<double>(winWidth),
-                static_cast<double>(frameHeight) / static_cast<double>(winHeight)
-            };
-        }
-    }
-
-    glfwSetMouseButtonCallback(window, mouse);
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-
-    auto renderer = std::make_unique<gfx::Renderer>(gfx::Color::black());
-    glfwSetWindowUserPointer(window, &renderer);
-
-    int w, h;
-    glfwGetFramebufferSize(window, &w, &h);
-    reshape(window, w, h);
-    glfwSetFramebufferSizeCallback(window, reshape);
-
-    init(window, *renderer);
-
     while (glfwWindowShouldClose(window) == 0) {
-        render(*renderer);
+        render();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    renderer->deleteMesh(ballMesh);
-    renderer.reset();  // ensure the renderer is deleted before terminating glfw
-
+    quit();
     glfwTerminate();
 
     return 0;
+}
+
+
+int main(int argc, char* argv[]) {
+    Application app;
+    return app.run();
 }
