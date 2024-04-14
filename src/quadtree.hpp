@@ -18,12 +18,9 @@ private:
     static constexpr std::size_t NODE_BOTTOM_RIGHT = 3;
 
     std::vector<RefT> _objects, _stuck;
-
     int _level;
     Rectangle<float> _bounds;
-
-    //TODO: replace with optional
-    std::array<Quadtree, 4>* _nodes = nullptr;
+    std::unique_ptr<std::array<Quadtree, 4>> _nodes;
 
     constexpr Quadtree& get_node(int idx) { return _nodes->at(idx); }
     constexpr const Quadtree& get_node(int idx) const { return _nodes->at(idx); }
@@ -35,12 +32,12 @@ private:
         auto y = _bounds.y;
 
         auto nextLevel = _level + 1;
-        _nodes = new std::array<Quadtree, 4>{
+        _nodes = std::make_unique<std::array<Quadtree, 4>>(std::array<Quadtree, 4>{
             Quadtree(nextLevel, { x + subWidth, y, subWidth, subHeight }),
             Quadtree(nextLevel, { x, y, subWidth, subHeight }),
             Quadtree(nextLevel, { x, y + subHeight, subWidth, subHeight }),
             Quadtree(nextLevel, { x + subWidth, y + subHeight, subWidth, subHeight })
-        };
+        });
     }
 
     int get_index(const RefT object) const {
@@ -79,22 +76,13 @@ public:
         _bounds(bounds) {
     }
 
-    ~Quadtree() {
-        if (_nodes != nullptr) {
-            delete _nodes;
-        }
-    }
-
     constexpr const std::vector<T*>& objects() const { return _objects; }
     constexpr const Rectangle<float>& bounds() const { return _bounds; }
 
     void clear() {
         _objects.clear();
         _stuck.clear();
-        if (_nodes != nullptr) {
-            delete _nodes;
-            _nodes = nullptr;
-        }
+        _nodes.reset();
     }
 
     void insert(RefT item) {
