@@ -6,6 +6,8 @@
 #include <iostream>
 
 void BallSimulator::DoQuadtreeCollisionDetection(World& world, float deltaTime) {
+    static std::vector<CollisionQuadtree::RefT> array, queued;
+
     deltaTime *= SIMULATION_TIMESCALE;
     auto& tree = world.quadtree();
 
@@ -13,28 +15,26 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float deltaTime) 
 
     const auto& entities = world.entities();
     auto i = 0;
-    static std::vector<Ball*> array;
-    array.resize(entities.size());
+    array.reserve(entities.size());
     for (auto ball : entities) {
         ball->update(world, deltaTime);
-        tree.insert(ball);
-        array[i++] = ball;
+        tree.insert(std::ref(*ball));
+        array.emplace_back(std::ref(*ball));
     }
 
-    std::vector<Ball*> queued;
     for (auto& ballA : array) {
         tree.retrieve(queued, ballA);
 
-        for (auto ballB : queued) {
-            if (ballB && ballB != ballA) {
-                ballA->collide(*ballB);
+        for (auto& ballB : queued) {
+            if (&ballB.get() != &ballA.get()) {
+                ballA.get().collide(ballB);
             }
         }
 
-        ballA->apply_world_boundary(world);
-
+        ballA.get().apply_world_boundary(world);
         queued.clear();
     }
+    array.clear();
 }
 
 void BallSimulator::DoSimpleCollisionDetection(World& world, float deltaTime) {

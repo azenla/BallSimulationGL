@@ -2,19 +2,26 @@
 
 #include "rectangle.hpp"
 #include <vector>
+#include <array>
+#include <functional>
 
 template <typename T, int MaxObjects, int MaxLevels>
 class Quadtree {
+public:
+    typedef Quadtree<T, MaxObjects, MaxLevels> NodeType;
+    typedef std::reference_wrapper<T> RefT;
+
+private:
     static const auto NODE_TOP_LEFT = 0;
     static const auto NODE_TOP_RIGHT = 1;
     static const auto NODE_BOTTOM_LEFT = 2;
     static const auto NODE_BOTTOM_RIGHT = 3;
 
-    std::vector<T*> _objects;
-    std::vector<T*> _stuck;
+    std::vector<RefT> _objects;
+    std::vector<RefT> _stuck;
 
-    typedef Quadtree<T, MaxObjects, MaxLevels> NodeType;
-    NodeType* _nodes[4] = {nullptr, nullptr, nullptr, nullptr};
+    //TODO: replace with optional
+    std::array<NodeType*, 4> _nodes = { nullptr, nullptr, nullptr, nullptr };
 
     int _level;
     Rectangle<float> _bounds;
@@ -42,11 +49,11 @@ class Quadtree {
         });
     }
 
-    int get_index(const T* object) {
+    int get_index(const RefT object) {
         auto idx = -1;
         auto verticalMidpoint = _bounds.x + (_bounds.w / 2.0f);
         auto horizontalMidpoint = _bounds.y + (_bounds.h / 2.0f);
-        const auto rect = object->rect();
+        const auto rect = object.get().rect();
         auto topQuadrant = (rect.y < horizontalMidpoint && rect.y + rect.h < horizontalMidpoint);
         auto bottomQuadrant = (rect.y > horizontalMidpoint);
 
@@ -71,7 +78,7 @@ class Quadtree {
         return _nodes[idx];
     }
 
-    void append_our_objects(std::vector<T*>& objects) {
+    void append_our_objects(std::vector<RefT>& objects) {
         objects.insert(std::end(objects), std::begin(_objects), std::end(_objects));
         objects.insert(std::end(objects), std::begin(_stuck), std::end(_stuck));
     }
@@ -101,25 +108,25 @@ public:
         }
     }
 
-    void insert(T* item) {
+    void insert(RefT item) {
         if (_nodes[0] != nullptr) {
             auto idx = get_index(item);
 
             if (idx != -1) {
                 auto node = find_node(idx);
 
-                if (node->_bounds.is_inside(item->rect())) {
+                if (node->_bounds.is_inside(item.get().rect())) {
                     node->insert(item);
                 }
                 else {
-                    _stuck.push_back(item);
+                    _stuck.emplace_back(std::ref(item));
                 }
 
                 return;
             }
         }
 
-        _objects.push_back(item);
+        _objects.emplace_back(std::ref(item));
 
         if (_objects.size() > MaxObjects && _level < MaxLevels) {
             if (_nodes[0] == nullptr) {
@@ -140,13 +147,13 @@ public:
         }
     }
 
-    void retrieve(std::vector<T*>& objects, const T* item) {
+    void retrieve(std::vector<RefT>& objects, const RefT item) {
         auto idx = get_index(item);
 
         if (idx != -1 && _nodes[idx] != nullptr) {
             auto node = _nodes[idx];
             auto bounds = node->_bounds;
-            const auto rect = item->rect();
+            const auto rect = item.get().rect();
             if (bounds.is_inside(rect)) {
                 node->retrieve(objects, item);
             } else {

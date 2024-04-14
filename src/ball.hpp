@@ -17,6 +17,11 @@ namespace BallSimulator {
         int collisionFlash = 0;
 
         Ball(float mass, float radius, const vec2f& position = vec2f::zero(), const vec2f& velocity = vec2f::zero());
+        constexpr Ball(const Ball& other) :
+            _mass(other._mass),
+            _radius(other._radius),
+            _position(other._position),
+            _velocity(other._velocity) {}
         constexpr Ball(Ball&& other) :
             _mass(other._mass),
             _radius(other._radius),
