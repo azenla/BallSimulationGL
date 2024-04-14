@@ -13,23 +13,19 @@ void BallSimulator::DoQuadtreeCollisionDetection(World& world, float deltaTime) 
 
     const auto& entities = world.entities();
     auto i = 0;
-    static std::vector<const Rectangle<Ball*>*> array;
+    static std::vector<Ball*> array;
     array.resize(entities.size());
     for (auto ball : entities) {
         ball->update(world, deltaTime);
-
-        const auto& rect = ball->rect();
-        tree.insert(rect);
-        array[i++] = &rect;
+        tree.insert(ball);
+        array[i++] = ball;
     }
 
-    std::vector<const Rectangle<Ball*>*> queued;
-    for (const auto& rect : array) {
-        auto ballA = rect->value;
-        tree.retrieve(queued, *rect);
+    std::vector<Ball*> queued;
+    for (auto& ballA : array) {
+        tree.retrieve(queued, ballA);
 
-        for (auto bb : queued) {
-            const auto& ballB = bb->value;
+        for (auto ballB : queued) {
             if (ballB && ballB != ballA) {
                 ballA->collide(*ballB);
             }

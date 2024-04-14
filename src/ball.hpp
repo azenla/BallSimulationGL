@@ -12,7 +12,6 @@ namespace BallSimulator {
         float _radius;
         vec2f _position;
         vec2f _velocity;
-        Rectangle<Ball*> _rect;
 
     public:
         int collisionFlash = 0;
@@ -22,8 +21,7 @@ namespace BallSimulator {
             _mass(other._mass),
             _radius(other._radius),
             _position(std::move(other._position)),
-            _velocity(std::move(other._velocity)),
-            _rect(other._rect.x, other._rect.y, other._rect.w, other._rect.h, this) {}
+            _velocity(std::move(other._velocity)) {}
 
         inline constexpr float mass() const { return _mass; }
         inline constexpr float radius() const { return _radius; }
@@ -31,12 +29,12 @@ namespace BallSimulator {
         inline constexpr const vec2f& get_position() const { return _position; }
         inline constexpr const vec2f& get_velocity() const { return _velocity; }
 
-        void set_position(const vec2f& newpos);
+        inline void set_position(const vec2f& newpos) { _position = newpos; }
         inline void set_position(float x, float y) { set_position({ x, y }); }
         inline void set_velocity(const vec2f& newvel) { _velocity = newvel; }
         inline void set_velocity(float x, float y) { set_velocity({ x, y }); }
 
-        inline constexpr const Rectangle<Ball*>& rect() const { return _rect; }
+        inline constexpr Rectangle<float> rect() const { return Rectangle<float>(_position, _radius * 2.0f); }
 
         void update(const World& world, float deltaTime);
         bool collide(Ball& other);

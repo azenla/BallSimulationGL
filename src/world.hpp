@@ -9,7 +9,7 @@ namespace BallSimulator {
         float _gravity;
         std::vector<Ball*> _entities;
         CollisionQuadtree _quadtree;
-        Rectangle<Ball*> _bounds;
+        Rectangle<float> _bounds;
 
     public:
         World(float width, float height);
@@ -28,6 +28,6 @@ namespace BallSimulator {
         inline constexpr const std::vector<Ball*>& entities() const { return _entities; }
         inline constexpr const CollisionQuadtree& quadtree() const { return _quadtree; }
         inline constexpr CollisionQuadtree& quadtree() { return _quadtree; }
-        inline constexpr const Rectangle<Ball*>& bounds() const { return _bounds; }
+        inline constexpr const Rectangle<float>& bounds() const { return _bounds; }
     };
 }

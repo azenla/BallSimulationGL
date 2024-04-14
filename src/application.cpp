@@ -65,7 +65,11 @@ void Application::render() {
     }
 
     double deltaTime = currentTime - lastFrameTime;
+#ifdef USE_QUADTREES
     BallSimulator::DoQuadtreeCollisionDetection(world, static_cast<float>(deltaTime));
+#else
+    BallSimulator::DoSimpleCollisionDetection(world, static_cast<float>(deltaTime));
+#endif
     lastFrameTime = currentTime;
 
     static std::vector<gfx::Instance> ballInstances;

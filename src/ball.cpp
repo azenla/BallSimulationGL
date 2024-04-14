@@ -4,18 +4,11 @@
 
 using namespace BallSimulator;
 
-Ball::Ball(float mass, float radius, const vec2f& position, const vec2f& velocity) :
-        _rect(Rectangle<Ball*>(position.x, position.y, radius * 2, radius * 2, this)) {
+Ball::Ball(float mass, float radius, const vec2f& position, const vec2f& velocity) {
     _mass = mass;
     _radius = radius;
     _position = position;
     _velocity = velocity;
-}
-
-void Ball::set_position(const vec2f& newPos) {
-    _position = newPos;
-    _rect.x = newPos.x;
-    _rect.y = newPos.y;
 }
 
 void Ball::update(const World& world, float deltaTime) {

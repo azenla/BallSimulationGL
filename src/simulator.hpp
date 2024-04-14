@@ -17,7 +17,7 @@ namespace BallSimulator {
 
     const float Epsilon = PHYSICS_EPSILON;
 
-    typedef Quadtree<Ball*, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> CollisionQuadtree;
+    typedef Quadtree<Ball, QUADTREE_MAX_OBJECTS, QUADTREE_MAX_LEVELS> CollisionQuadtree;
 
     void DoQuadtreeCollisionDetection(World& world, float deltaTime);
     void DoSimpleCollisionDetection(World& world, float deltaTime);

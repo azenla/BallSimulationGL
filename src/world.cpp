@@ -7,7 +7,7 @@ using namespace BallSimulator;
 
 World::World(float width, float height) :
     _gravity(DefaultGravity),
-    _bounds(Rectangle<Ball*>(0.0f, 0.0f, width, height)),
+    _bounds(Rectangle<float>(0.0f, 0.0f, width, height)),
     _quadtree(CollisionQuadtree(0, bounds())) {
 }
 
