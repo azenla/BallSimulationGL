@@ -12,22 +12,29 @@
 
 static std::unique_ptr<BallSimulator::World> world;
 
-void generate_filled_circle(std::vector<gfx::Vertex>& out, float radius = 1.0f) {
+void generate_filled_circle(std::vector<gfx::Vertex>& vertOut, std::vector<uint16_t>& idxOut, float radius = 1.0f) {
     constexpr int triangleFanCount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
     constexpr float twoPi = 2.0f * 3.1415926f;
     constexpr float circleSegmentTheta = twoPi / triangleFanCount;
 
-    vec2f last(1.0f, 0.0f);
-    for (auto i = 1; i <= triangleFanCount; i++) {
+    vertOut.reserve(triangleFanCount + 1);
+    idxOut.reserve(triangleFanCount * 3);
+
+    vertOut.push_back({ vec2f::zero() });
+    vertOut.push_back({ vec2f(radius, 0.0f) });
+    for (auto i = 1; i < triangleFanCount; i++) {
         vec2f v(
             radius * std::cos(i * circleSegmentTheta),
             radius * std::sin(i * circleSegmentTheta)
         );
-        out.push_back({ vec2f::zero() });
-        out.push_back({ v });
-        out.push_back({ last });
-        last = v;
+        vertOut.push_back({ v });
+        idxOut.emplace_back(0);
+        idxOut.emplace_back(i + 1);
+        idxOut.emplace_back(i);
     }
+    idxOut.emplace_back(0);
+    idxOut.emplace_back(1);
+    idxOut.emplace_back(triangleFanCount);
 }
 
 unsigned ballMesh = 0;
@@ -90,8 +97,9 @@ void init(GLFWwindow* window, gfx::Renderer& render) {
     glfwGetFramebufferSize(window, &w, &h);
 
     std::vector<gfx::Vertex> ballVerts;
-    generate_filled_circle(ballVerts);
-    ballMesh = render.createMesh(ballVerts);
+    std::vector<uint16_t> ballIndices;
+    generate_filled_circle(ballVerts, ballIndices);
+    ballMesh = render.createMesh(ballVerts, ballIndices);
 }
 
 void reshape(GLFWwindow* window, int w, int h) {

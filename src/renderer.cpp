@@ -13,6 +13,8 @@ Renderer::Renderer(Color clear) {
         static_cast<GLfloat>(clear.b * colorMul),
         static_cast<GLfloat>(clear.a * colorMul)
     );
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
@@ -40,14 +42,16 @@ void Renderer::newFrame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-unsigned Renderer::createMesh(const std::vector<Vertex>& vertices) {
+unsigned Renderer::createMesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
     GLuint list = glGenLists(1);
     if (list == 0) {
         return 0;
     }
     glNewList(list, GL_COMPILE);
         glBegin(GL_TRIANGLES);
-            for (auto vertex : vertices) {
+            for (auto index : indices) {
+                assert(index < vertices.size());
+                const Vertex& vertex = vertices[index];
                 glVertex2f(vertex.position.x, vertex.position.y);
             }
         glEnd();
@@ -75,7 +79,7 @@ void Renderer::drawMesh(unsigned mesh, const Instance& instance) {
 
     GLfloat x = instance.position.x;
     GLfloat y = instance.position.y;
-    GLfloat scale = instance.scale;
+    GLfloat scale = instance.scale * 1.0f;
 
     glLoadIdentity();
     glTranslatef(x, y, 0.0f);

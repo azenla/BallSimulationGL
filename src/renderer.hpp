@@ -50,7 +50,7 @@ namespace gfx {
 
         void newFrame();
 
-        unsigned createMesh(const std::vector<Vertex>& vertices);
+        unsigned createMesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
         void deleteMesh(unsigned mesh);
 
         void drawMesh(unsigned mesh, const Instance& instance);
