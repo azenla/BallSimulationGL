@@ -4,7 +4,6 @@
 #include <vector>
 #include <array>
 #include <functional>
-#include <cstddef>
 
 template <typename T, int MaxObjects, int MaxLevels>
 class Quadtree {
@@ -12,15 +11,34 @@ public:
     typedef std::reference_wrapper<T> RefT;
 
 private:
-    static constexpr std::size_t NODE_TOP_LEFT     = 0;
-    static constexpr std::size_t NODE_TOP_RIGHT    = 1;
-    static constexpr std::size_t NODE_BOTTOM_LEFT  = 2;
-    static constexpr std::size_t NODE_BOTTOM_RIGHT = 3;
+    class Quad {
+        std::array<Quadtree, 4> _nodes;
+
+    public:
+        constexpr Quad(
+            Quadtree&& new_top_left, Quadtree&& new_top_right, Quadtree&& new_bottom_left, Quadtree&& new_bottom_right
+        ) : _nodes{
+            std::move(new_top_left), std::move(new_top_right), std::move(new_bottom_left), std::move(new_bottom_right)
+        } {}
+
+        inline constexpr const Quadtree& top_left() const     { return _nodes[0]; }
+        inline constexpr const Quadtree& top_right() const    { return _nodes[1]; }
+        inline constexpr const Quadtree& bottom_left() const  { return _nodes[2]; }
+        inline constexpr const Quadtree& bottom_right() const { return _nodes[3]; }
+
+        typedef typename std::array<Quadtree, 4>::size_type size_type;
+        inline constexpr Quadtree& at(size_type i) { return _nodes.at(i); }
+        inline constexpr Quadtree& operator [](size_type i) { return _nodes[i]; }
+
+        typedef typename std::array<Quadtree, 4>::iterator iterator;
+        inline constexpr iterator begin() { return std::begin(_nodes); }
+        inline constexpr iterator end()   { return std::end(_nodes); }
+    };
 
     std::vector<RefT> _objects, _stuck;
     int _level;
     Rectangle<float> _bounds;
-    std::unique_ptr<std::array<Quadtree, 4>> _nodes;
+    std::unique_ptr<Quad> _nodes;
 
     constexpr Quadtree& get_node(int idx) { return _nodes->at(idx); }
     constexpr const Quadtree& get_node(int idx) const { return _nodes->at(idx); }
@@ -32,12 +50,12 @@ private:
         auto y = _bounds.y;
 
         auto nextLevel = _level + 1;
-        _nodes = std::make_unique<std::array<Quadtree, 4>>(std::array<Quadtree, 4>{
+        _nodes = std::make_unique<Quad>(
             Quadtree(nextLevel, { x + subWidth, y, subWidth, subHeight }),
             Quadtree(nextLevel, { x, y, subWidth, subHeight }),
             Quadtree(nextLevel, { x, y + subHeight, subWidth, subHeight }),
             Quadtree(nextLevel, { x + subWidth, y + subHeight, subWidth, subHeight })
-        });
+        );
     }
 
     int get_index(const RefT object) const {
@@ -129,28 +147,29 @@ public:
 
         if (idx != -1 && _nodes != nullptr) {
             const auto& node = get_node(idx);
-            auto& bounds = node._bounds;
+            const auto& bounds = node._bounds;
             const auto rect = item.get().rect();
             if (bounds.is_inside(rect)) {
                 node.retrieve(objects, item);
             } else {
-                if (rect.x <= get_node(NODE_TOP_RIGHT)._bounds.x) {
-                    if (rect.y <= get_node(NODE_BOTTOM_LEFT)._bounds.y) {
-                        get_node(NODE_TOP_LEFT).append_our_objects(objects);
+                const auto& quad = *_nodes;
+                if (rect.x <= quad.top_right()._bounds.x) {
+                    if (rect.y <= quad.bottom_left()._bounds.y) {
+                        quad.top_left().append_our_objects(objects);
                     }
 
-                    if (rect.y + rect.h > get_node(NODE_BOTTOM_LEFT)._bounds.y) {
-                        get_node(NODE_BOTTOM_LEFT).append_our_objects(objects);
+                    if (rect.y + rect.h > quad.bottom_left()._bounds.y) {
+                        quad.bottom_left().append_our_objects(objects);
                     }
                 }
 
-                if (rect.x + rect.w > get_node(NODE_TOP_RIGHT)._bounds.x) {
-                    if (rect.y <= get_node(NODE_BOTTOM_RIGHT)._bounds.y) {
-                        get_node(NODE_TOP_RIGHT).append_our_objects(objects);
+                if (rect.x + rect.w > quad.top_right()._bounds.x) {
+                    if (rect.y <= quad.bottom_right()._bounds.y) {
+                        quad.top_right().append_our_objects(objects);
                     }
 
-                    if (rect.y + rect.h > get_node(NODE_BOTTOM_RIGHT)._bounds.y) {
-                        get_node(NODE_BOTTOM_RIGHT).append_our_objects(objects);
+                    if (rect.y + rect.h > quad.bottom_right()._bounds.y) {
+                        quad.bottom_right().append_our_objects(objects);
                     }
                 }
             }
