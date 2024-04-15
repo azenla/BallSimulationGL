@@ -1,6 +1,7 @@
 #include "ball.hpp"
 #include "world.hpp"
 #include "simulator.hpp"
+#include "config.h"
 
 using namespace BallSimulator;
 

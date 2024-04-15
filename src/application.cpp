@@ -4,11 +4,11 @@
 #include "renderer.hpp"
 
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <chrono>
-#include <vector>
 #include <iostream>
 
-unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius) {
+gfx::Mesh Application::generate_filled_circle(gfx::Renderer& render, float radius) {
     constexpr int triangleFanCount = GL_DRAW_CIRCLE_TRIANGLE_AMOUNT;
     constexpr float twoPi = 2.0f * 3.1415926f;
     constexpr float circleSegmentTheta = twoPi / triangleFanCount;
@@ -19,13 +19,14 @@ unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius
     indices.reserve(triangleFanCount * 3);
 
     vertices.push_back({ vec2f::zero() });
-    vertices.push_back({ vec2f(radius, 0.0f) });
+    vertices.push_back({{ radius, 0.0f }});
     for (auto i = 1; i < triangleFanCount; i++) {
-        vec2f v(
-            radius * std::cos(i * circleSegmentTheta),
-            radius * std::sin(i * circleSegmentTheta)
-        );
-        vertices.push_back({ v });
+        vertices.push_back({
+            vec2f(
+                std::cos(i * circleSegmentTheta),
+                std::sin(i * circleSegmentTheta)
+            ) * radius
+        });
         indices.emplace_back(0);
         indices.emplace_back(i + 1);
         indices.emplace_back(i);
@@ -37,39 +38,19 @@ unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius
     return render.create_mesh(vertices, indices);
 }
 
-unsigned Application::generate_unfilled_rect(gfx::Renderer& render, const Extent<float>& rect) {
-    std::array<uint16_t, 8> indices{ 0, 1, 1, 2, 2, 3, 3, 0 };
-    std::array<gfx::Vertex, 4> vertices{
-        gfx::Vertex{{ rect.x1, rect.y1 }},
-        gfx::Vertex{{ rect.x2, rect.y1 }},
-        gfx::Vertex{{ rect.x2, rect.y2 }},
-        gfx::Vertex{{ rect.x1, rect.y2 }}
+gfx::Mesh Application::generate_filled_rect(gfx::Renderer& render, const Extent<float>& rect) {
+    constexpr std::array<uint16_t, 6> indices{ 0, 1, 2, 2, 3, 0 };
+    const gfx::Vertex vertices[4] = {
+        { rect.bottom_left() }, { rect.bottom_right() },
+        { rect.top_right() }, { rect.top_left() }
     };
 
-    return render.create_mesh(vertices, indices, gfx::PrimitiveType::LINES);
-}
-
-void Application::render_quadtree_bounds() {
-    static std::vector<gfx::Instance> instances;
-    static void (*inner)(const BallSimulator::CollisionQuadtree&) =
-            [](const BallSimulator::CollisionQuadtree& innerTree) {
-        if (innerTree.has_child_nodes()) {
-            const auto& bounds = innerTree.bounds();
-            instances.push_back({
-                .position = bounds.position(),
-                .scale = bounds.size(),
-                .color = gfx::Color::blue()
-            });
-            innerTree.for_each_node<decltype(inner)>(inner);
-        }
-    };
-    inner(world.quadtree());
-
-    renderer->draw_mesh(quadMesh, instances);
-    instances.clear();
+    return render.create_mesh(gfx::Span<gfx::Vertex>(vertices, 4), indices);
 }
 
 void Application::render() {
+    using namespace gfx;
+
     frames++;
     const auto currentTime = glfwGetTime();
     auto elapsed = static_cast<int>(currentTime * 1000);
@@ -89,26 +70,75 @@ void Application::render() {
 #endif
     lastFrameTime = currentTime;
 
-    static std::vector<gfx::Instance> ballInstances;
-    ballInstances.clear();
+    // build instance lists
     ballInstances.reserve(world.entities().size());
-
-    // draw everything
-    renderer->new_frame();
     for (auto& ball : world.entities()) {
-        gfx::Instance instance;
+        Instance instance;
         instance.position = ball->get_position();
         instance.scale = vec2f(ball->radius());
         if (ball->collisionFlash > 0) {
-            instance.color = gfx::Color::yellow();
+            instance.color = color::yellow();
             --ball->collisionFlash;
         } else {
-            instance.color = gfx::Color::red();
+            instance.color = color::red();
         }
         ballInstances.emplace_back(instance);
     }
-    renderer->draw_mesh(ballMesh, ballInstances);
-    render_quadtree_bounds();
+
+    const auto build_quadtree_vis_instances = [this](const BallSimulator::CollisionQuadtree& tree) {
+        static auto& quads = quadInstances;
+#ifdef SHOW_QUADTREE_HEATMAP
+        static auto& rects = rectInstances;
+#endif
+        static void (*inner)(const BallSimulator::CollisionQuadtree&) =
+                [](const BallSimulator::CollisionQuadtree& innerTree) {
+            
+            const auto& bounds = innerTree.bounds();
+            if (innerTree.has_child_nodes()) {
+                quads.push_back({
+                    .position = bounds.position(),
+                    .scale = bounds.size(),
+                    .color = color::blue()
+                });
+                innerTree.for_each_node<decltype(inner)>(inner);
+            }
+#ifdef SHOW_QUADTREE_HEATMAP
+            else if (!innerTree.objects().empty()) {
+                auto rescale = [](float x, float lin, float exp) {
+                    return std::max(x * lin, x * (1.0f - exp) + x * x * exp);
+                };
+
+                float normalisedCount = static_cast<float>(innerTree.objects().size()) / QUADTREE_MAX_OBJECTS;
+                float alpha = 0.4f * rescale(normalisedCount, 0.45f, 1.6f);
+
+                rects.push_back({
+                    .position = bounds.position(),
+                    .scale = bounds.size(),
+                    .color = color::black().mix(color::cyan(), alpha)
+                });
+            }
+#endif
+        };
+        inner(tree);
+    };
+    build_quadtree_vis_instances(world.quadtree());
+
+    // draw everything
+    renderer->new_frame();
+#ifdef SHOW_QUADTREE_HEATMAP
+    if (!rectInstances.empty()) {
+        renderer->draw_mesh(rectMesh, rectInstances);
+    }
+    rectInstances.clear();
+#endif
+    if (!ballInstances.empty()) {
+        renderer->draw_mesh(ballMesh, ballInstances);
+    }
+    ballInstances.clear();
+    if (!quadInstances.empty()) {
+        renderer->draw_mesh(quadMesh, quadInstances);
+    }
+    quadInstances.clear();
 }
 
 bool Application::init() {
@@ -155,7 +185,7 @@ bool Application::init() {
     };
 
     // setup rendering
-    renderer = std::make_unique<gfx::Renderer>(gfx::Color::black());
+    renderer = std::make_unique<gfx::Renderer>(gfx::colorf::black());
     calculate_content_size_and_scale();
     resize();
 
@@ -172,13 +202,15 @@ bool Application::init() {
         state = -state;
     }
     world.scatter();
+
     // create meshes for rendering
     ballMesh = generate_filled_circle(*renderer);
+    rectMesh = generate_filled_rect(*renderer);
     quadMesh = renderer->create_mesh(std::initializer_list<gfx::Vertex>{
         {{ 0.0f, 0.5f }}, {{ 1.0f, 0.5f }},
         {{ 0.5f, 0.0f }}, {{ 0.5f, 1.0f }}
     }, std::initializer_list<uint16_t>{ 0, 1, 2, 3 }, gfx::PrimitiveType::LINES);
-    if (ballMesh == 0 || quadMesh == 0) {
+    if (!ballMesh.valid() || !rectMesh.valid() || !quadMesh.valid()) {
         return false;
     }
 
@@ -188,6 +220,7 @@ bool Application::init() {
 void Application::quit() {
     if (renderer) {
         renderer->delete_mesh(quadMesh);
+        renderer->delete_mesh(rectMesh);
         renderer->delete_mesh(ballMesh);
         renderer.reset();  // ensure the renderer is deleted before terminating glfw
     }

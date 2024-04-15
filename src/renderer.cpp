@@ -4,15 +4,8 @@
 
 using namespace gfx;
 
-static constexpr float colorMul = 1.0f / static_cast<float>(0xFF);
-
-Renderer::Renderer(Color clear) {
-    glClearColor(
-        static_cast<GLfloat>(clear.r * colorMul),
-        static_cast<GLfloat>(clear.g * colorMul),
-        static_cast<GLfloat>(clear.b * colorMul),
-        static_cast<GLfloat>(clear.a * colorMul)
-    );
+Renderer::Renderer(const colorf& clear) {
+    glClearColor(clear.r, clear.g, clear.b, clear.a);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glMatrixMode(GL_PROJECTION);
@@ -48,7 +41,7 @@ Mesh Renderer::create_mesh(const Span<Vertex> vertices, const Span<uint16_t> ind
 
     GLuint list = glGenLists(1);
     if (list == 0) {
-        return 0;
+        return Mesh();
     }
     glNewList(list, GL_COMPILE);
         glBegin(beginMode);
@@ -59,12 +52,13 @@ Mesh Renderer::create_mesh(const Span<Vertex> vertices, const Span<uint16_t> ind
             }
         glEnd();
     glEndList();
-    return static_cast<Mesh>(list);
+    return Mesh(list);
 }
 
-void Renderer::delete_mesh(Mesh mesh) {
-    if (mesh != 0u) {
-        glDeleteLists(mesh, 1);
+void Renderer::delete_mesh(Mesh& mesh) {
+    if (mesh.valid()) {
+        glDeleteLists(mesh.get_hnd(), 1);
+        mesh = Mesh();
     }
 }
 
@@ -72,26 +66,24 @@ static inline void inner_draw_mesh(Mesh mesh, const Instance& instance) {
     glLoadIdentity();
     glTranslatef(
         static_cast<GLfloat>(instance.position.x),
-        static_cast<GLfloat>(instance.position.y), 0.0f);
+        static_cast<GLfloat>(instance.position.y), 0.0f
+    );
     glScalef(
         static_cast<GLfloat>(instance.scale.x),
-        static_cast<GLfloat>(instance.scale.y), 1.0f);
-    glColor4f(
-        static_cast<GLfloat>(instance.color.r * colorMul),
-        static_cast<GLfloat>(instance.color.g * colorMul),
-        static_cast<GLfloat>(instance.color.b * colorMul),
-        static_cast<GLfloat>(instance.color.a * colorMul)
+        static_cast<GLfloat>(instance.scale.y), 1.0f
     );
-    glCallList(static_cast<GLuint>(mesh));
+    colorf fc(instance.color);
+    glColor4f(fc.r, fc.g, fc.b, fc.a);
+    glCallList(static_cast<GLuint>(mesh.get_hnd()));
 }
 
 void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
-    assert(mesh);
+    assert(mesh.valid());
     inner_draw_mesh(mesh, instance);
 }
 
 void Renderer::draw_mesh(Mesh mesh, const Span<Instance> instances) {
-    assert(mesh);
+    assert(mesh.valid());
     assert(instances.data());
     for (auto& instance : instances) {
         inner_draw_mesh(mesh, instance);

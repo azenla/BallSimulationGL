@@ -4,43 +4,98 @@
 #include "rectangle.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <algorithm>
 
 namespace gfx {
     struct Vertex {
         vec2f position;
+
+        constexpr Vertex(vec2f&& newpos) noexcept
+            : position(std::forward<vec2f>(newpos)) {}
     };
 
+    namespace detail {
+        template <typename T> constexpr T unit() noexcept { return T{}; }
+        template <> constexpr float unit<float>() noexcept { return 1.0f; }
+        template <> constexpr std::uint8_t unit<std::uint8_t>() noexcept { return std::numeric_limits<std::uint8_t>::max(); }
+    }
+
+    template <typename T>
     struct Color {
-        std::uint8_t r, g, b, a;
+        T r, g, b, a;
+        static constexpr T zero() noexcept { return static_cast<T>(0); }
+        static constexpr T one() noexcept { return detail::unit<T>(); }
 
-        constexpr Color(): r(0), g(0), b(0), a(0) {}
-        constexpr Color(float r, float g, float b, float a = 1.0) :
-            r(static_cast<std::uint8_t>(r * 0xFF)),
-            g(static_cast<std::uint8_t>(g * 0xFF)),
-            b(static_cast<std::uint8_t>(b * 0xFF)),
-            a(static_cast<std::uint8_t>(a * 0xFF)) {}
+        constexpr Color() noexcept : r(0), g(0), b(0), a(0) {}
+        constexpr Color(T rr, T gg, T bb, T aa = one()) noexcept : r(rr), g(gg), b(bb), a(aa) {}
+        constexpr Color(const Color<T>& other) noexcept = default;
+        constexpr Color(Color<T>&& other) noexcept = default;
+        constexpr Color& operator =(const Color<T>& other) noexcept = default;
+        ~Color() noexcept = default;
 
-        static constexpr Color black()   { return Color(0.0f, 0.0f, 0.0f); }
-        static constexpr Color red()     { return Color(1.0f, 0.0f, 0.0f); }
-        static constexpr Color green()   { return Color(0.0f, 1.0f, 0.0f); }
-        static constexpr Color blue()    { return Color(0.0f, 0.0f, 1.0f); }
-        static constexpr Color yellow()  { return Color(1.0f, 1.0f, 0.0f); }
-        static constexpr Color magenta() { return Color(1.0f, 0.0f, 1.0f); }
-        static constexpr Color cyan()    { return Color(0.0f, 1.0f, 1.0f); }
-        static constexpr Color white()   { return Color(1.0f, 1.0f, 1.0f); }
+        constexpr explicit Color<std::uint8_t>(Color<float> other) noexcept :
+            r(static_cast<std::uint8_t>(std::min(std::max(other.r * 255.0f, 0.0f), 255.0f))),
+            g(static_cast<std::uint8_t>(std::min(std::max(other.g * 255.0f, 0.0f), 255.0f))),
+            b(static_cast<std::uint8_t>(std::min(std::max(other.b * 255.0f, 0.0f), 255.0f))),
+            a(static_cast<std::uint8_t>(std::min(std::max(other.a * 255.0f, 0.0f), 255.0f))) {}
+
+        constexpr explicit Color<float>(Color<std::uint8_t> other) noexcept {
+            constexpr float colorMul = 1.0f / static_cast<float>(0xFF);
+            r = std::min(one(), static_cast<T>(other.r) * colorMul);
+            g = std::min(one(), static_cast<T>(other.g) * colorMul);
+            b = std::min(one(), static_cast<T>(other.b) * colorMul);
+            a = std::min(one(), static_cast<T>(other.a) * colorMul);
+        }
+
+        static constexpr Color black() noexcept   { return Color(zero(), zero(), zero()); }
+        static constexpr Color red() noexcept     { return Color(one(),  zero(), zero()); }
+        static constexpr Color green() noexcept   { return Color(zero(), one(),  zero()); }
+        static constexpr Color blue() noexcept    { return Color(zero(), zero(), one()); }
+        static constexpr Color yellow() noexcept  { return Color(one(),  one(),  zero()); }
+        static constexpr Color magenta() noexcept { return Color(one(),  zero(), one()); }
+        static constexpr Color cyan() noexcept    { return Color(zero(), one(),  one()); }
+        static constexpr Color white() noexcept   { return Color(one(),  one(),  one()); }
+
+        constexpr Color mix(Color<T>&& other, float x) noexcept {
+            auto interp = std::min(std::max(x, 0.0f), 1.0f);
+            return Color<T>(
+                static_cast<T>(static_cast<float>(r) * (1.0f - interp) + static_cast<float>(other.r) * interp),
+                static_cast<T>(static_cast<float>(g) * (1.0f - interp) + static_cast<float>(other.g) * interp),
+                static_cast<T>(static_cast<float>(b) * (1.0f - interp) + static_cast<float>(other.b) * interp),
+                static_cast<T>(static_cast<float>(a) * (1.0f - interp) + static_cast<float>(other.a) * interp)
+            );
+        }
     };
+
+    typedef Color<std::uint8_t> color;
+    typedef Color<float> colorf;
 
     struct Instance {
         vec2f position = vec2f::zero();
         vec2f scale = vec2f::one();
-        Color color = Color();
+        color color = color::white();
     };
 
     enum class PrimitiveType {
         POINTS, LINES, TRIANGLES
     };
 
-    typedef unsigned Mesh;
+    class Mesh {
+        unsigned _hnd = 0u;
+
+public:
+        constexpr Mesh() noexcept = default;
+        constexpr explicit Mesh(unsigned hnd) noexcept : _hnd(hnd) {}
+
+        constexpr unsigned get_hnd() noexcept {
+            return _hnd;
+        }
+
+        constexpr bool valid() const noexcept {
+            return _hnd != 0u;
+        }
+    };
 
     template <typename ElementType>
     struct Span {
@@ -83,7 +138,7 @@ namespace gfx {
 
     class Renderer {
     public:
-        Renderer(Color clear = Color::black());
+        Renderer(const colorf& clear = colorf::black());
         virtual ~Renderer();
 
         void viewport(int width, int height);
@@ -92,7 +147,7 @@ namespace gfx {
 
         Mesh create_mesh(const Span<Vertex> vertices, const Span<uint16_t> indices,
             PrimitiveType mode = PrimitiveType::TRIANGLES);
-        void delete_mesh(unsigned mesh);
+        void delete_mesh(Mesh& mesh);
 
         void draw_mesh(Mesh mesh, const Instance& instance);
         void draw_mesh(Mesh mesh, const Span<Instance> instances);
