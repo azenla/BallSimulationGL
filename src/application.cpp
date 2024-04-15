@@ -53,17 +53,19 @@ void Application::render_quadtree_bounds() {
     static std::vector<gfx::Instance> instances;
     static void (*inner)(const BallSimulator::CollisionQuadtree&) =
             [](const BallSimulator::CollisionQuadtree& innerTree) {
-        const auto& bounds = innerTree.bounds();
-        instances.push_back({
-            .position = bounds.position(),
-            .scale = bounds.size(),
-            .color = gfx::Color::blue()
-        });
-        innerTree.for_each_node<decltype(inner)>(inner);
+        if (innerTree.has_child_nodes()) {
+            const auto& bounds = innerTree.bounds();
+            instances.push_back({
+                .position = bounds.position(),
+                .scale = bounds.size(),
+                .color = gfx::Color::blue()
+            });
+            innerTree.for_each_node<decltype(inner)>(inner);
+        }
     };
     inner(world.quadtree());
 
-    renderer->draw_meshes(rectMesh, instances);
+    renderer->draw_mesh(quadMesh, instances);
     instances.clear();
 }
 
@@ -105,7 +107,7 @@ void Application::render() {
         }
         ballInstances.emplace_back(instance);
     }
-    renderer->draw_meshes(ballMesh, ballInstances);
+    renderer->draw_mesh(ballMesh, ballInstances);
     render_quadtree_bounds();
 }
 
@@ -170,11 +172,13 @@ bool Application::init() {
         state = -state;
     }
     world.scatter();
-
     // create meshes for rendering
     ballMesh = generate_filled_circle(*renderer);
-    rectMesh = generate_unfilled_rect(*renderer);
-    if (ballMesh == 0 || rectMesh == 0) {
+    quadMesh = renderer->create_mesh(std::initializer_list<gfx::Vertex>{
+        {{ 0.0f, 0.5f }}, {{ 1.0f, 0.5f }},
+        {{ 0.5f, 0.0f }}, {{ 0.5f, 1.0f }}
+    }, std::initializer_list<uint16_t>{ 0, 1, 2, 3 }, gfx::PrimitiveType::LINES);
+    if (ballMesh == 0 || quadMesh == 0) {
         return false;
     }
 
@@ -183,7 +187,7 @@ bool Application::init() {
 
 void Application::quit() {
     if (renderer) {
-        renderer->delete_mesh(rectMesh);
+        renderer->delete_mesh(quadMesh);
         renderer->delete_mesh(ballMesh);
         renderer.reset();  // ensure the renderer is deleted before terminating glfw
     }

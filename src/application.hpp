@@ -14,7 +14,7 @@ class Application final {
     vec2d contentScale;
 
     BallSimulator::World world = BallSimulator::World(1024, 1024);
-    gfx::Mesh ballMesh = 0, rectMesh = 0;
+    gfx::Mesh ballMesh = 0, quadMesh = 0;
     int lastTimeBase = 0;
     int frames = 0;
     double fps = 60.0;

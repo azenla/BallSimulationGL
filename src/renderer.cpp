@@ -38,9 +38,7 @@ void Renderer::new_frame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-Mesh Renderer::create_mesh(const Vertex* vertices, std::size_t numVertices,
-        const uint16_t* indices, std::size_t numIndices, PrimitiveType mode) {
-
+Mesh Renderer::create_mesh(const Span<Vertex> vertices, const Span<uint16_t> indices, PrimitiveType mode) {
     GLenum beginMode;
     switch (mode) {
         case PrimitiveType::POINTS:    beginMode = GL_POINTS; break;
@@ -54,9 +52,8 @@ Mesh Renderer::create_mesh(const Vertex* vertices, std::size_t numVertices,
     }
     glNewList(list, GL_COMPILE);
         glBegin(beginMode);
-            for (std::size_t i = 0; i < numIndices; ++i) {
-                uint16_t index = indices[i];
-                assert(index < numVertices);
+            for (auto index : indices) {
+                assert(index < vertices.size());
                 const Vertex& vertex = vertices[index];
                 glVertex2f(vertex.position.x, vertex.position.y);
             }
@@ -71,9 +68,7 @@ void Renderer::delete_mesh(Mesh mesh) {
     }
 }
 
-void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
-    assert(mesh);
-
+static inline void inner_draw_mesh(Mesh mesh, const Instance& instance) {
     glLoadIdentity();
     glTranslatef(
         static_cast<GLfloat>(instance.position.x),
@@ -90,9 +85,15 @@ void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
     glCallList(static_cast<GLuint>(mesh));
 }
 
-void Renderer::draw_meshes(Mesh mesh, const Instance* instances, std::size_t numInstance) {
-    assert(instances);
-    for (std::size_t i = 0; i < numInstance; ++i) {
-        draw_mesh(mesh, instances[i]);
+void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
+    assert(mesh);
+    inner_draw_mesh(mesh, instance);
+}
+
+void Renderer::draw_mesh(Mesh mesh, const Span<Instance> instances) {
+    assert(mesh);
+    assert(instances.data());
+    for (auto& instance : instances) {
+        inner_draw_mesh(mesh, instance);
     }
 }
