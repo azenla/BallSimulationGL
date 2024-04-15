@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <limits>
 #include <algorithm>
+#include <cassert>
 
 namespace gfx {
     struct Vertex {
@@ -81,20 +82,35 @@ namespace gfx {
         POINTS, LINES, TRIANGLES
     };
 
-    class Mesh {
-        unsigned _hnd = 0u;
+    struct Mesh {
+        Mesh() noexcept : _valid(false) {};
+        constexpr explicit Mesh(PrimitiveType mode, unsigned vbo, unsigned ibo, int numindices) noexcept
+            : _valid(true), _mode(mode), _hnd{ vbo, ibo }, _numindices(numindices) {}
 
-public:
-        constexpr Mesh() noexcept = default;
-        constexpr explicit Mesh(unsigned hnd) noexcept : _hnd(hnd) {}
-
-        constexpr unsigned get_hnd() noexcept {
-            return _hnd;
-        }
+        static constexpr int VERTEX = 0, ELEMENT = 1;
 
         constexpr bool valid() const noexcept {
-            return _hnd != 0u;
+            return _valid;
         }
+
+        constexpr PrimitiveType mode() const noexcept {
+            return _mode;
+        }
+
+        constexpr unsigned get_buffer(int type) noexcept {
+            assert(type >= VERTEX && type <= ELEMENT);
+            return _hnd[type];
+        }
+
+        constexpr int element_count() const noexcept {
+            return _numindices;
+        }
+
+    private:
+        bool _valid = false;
+        PrimitiveType _mode;
+        unsigned _hnd[2];
+        int _numindices;
     };
 
     template <typename ElementType>
@@ -149,7 +165,7 @@ public:
             PrimitiveType mode = PrimitiveType::TRIANGLES);
         void delete_mesh(Mesh& mesh);
 
-        void draw_mesh(Mesh mesh, const Instance& instance);
-        void draw_mesh(Mesh mesh, const Span<Instance> instances);
+        void draw_mesh(Mesh& mesh, const Instance& instance);
+        void draw_mesh(Mesh& mesh, const Span<Instance> instances);
     };
 }
