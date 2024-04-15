@@ -1,6 +1,6 @@
-#include "application.hpp"
+#include "ballsimulatorgl.hpp"
 
 int main(int argc, char* argv[]) {
-    Application app;
+    BallSimulatorGl app;
     return app.run();
 }
