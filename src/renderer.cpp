@@ -26,11 +26,7 @@ Renderer::~Renderer() {
 
 
 void Renderer::viewport(int width, int height) {
-    glViewport(
-        static_cast<GLint>(0),
-        static_cast<GLint>(0),
-        static_cast<GLsizei>(width),
-        static_cast<GLsizei>(height));
+    glViewport(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, width, height, 0, -1, 1);
@@ -42,67 +38,61 @@ void Renderer::new_frame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-unsigned Renderer::create_mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
+Mesh Renderer::create_mesh(const Vertex* vertices, std::size_t numVertices,
+        const uint16_t* indices, std::size_t numIndices, PrimitiveType mode) {
+
+    GLenum beginMode;
+    switch (mode) {
+        case PrimitiveType::POINTS:    beginMode = GL_POINTS; break;
+        case PrimitiveType::LINES:     beginMode = GL_LINES; break;
+        case PrimitiveType::TRIANGLES: beginMode = GL_TRIANGLES; break;
+    }
+
     GLuint list = glGenLists(1);
     if (list == 0) {
         return 0;
     }
     glNewList(list, GL_COMPILE);
-        glBegin(GL_TRIANGLES);
-            for (auto index : indices) {
-                assert(index < vertices.size());
+        glBegin(beginMode);
+            for (std::size_t i = 0; i < numIndices; ++i) {
+                uint16_t index = indices[i];
+                assert(index < numVertices);
                 const Vertex& vertex = vertices[index];
                 glVertex2f(vertex.position.x, vertex.position.y);
             }
         glEnd();
     glEndList();
-    return static_cast<unsigned>(list);
+    return static_cast<Mesh>(list);
 }
 
-void Renderer::delete_mesh(unsigned mesh) {
+void Renderer::delete_mesh(Mesh mesh) {
+    if (mesh != 0u) {
+        glDeleteLists(mesh, 1);
+    }
+}
+
+void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
     assert(mesh);
-    glDeleteLists(mesh, 1);
-}
-
-
-static void glColor(Color color) {
-    glColor4f(
-        static_cast<GLfloat>(color.r * colorMul),
-        static_cast<GLfloat>(color.g * colorMul),
-        static_cast<GLfloat>(color.b * colorMul),
-        static_cast<GLfloat>(color.a * colorMul)
-    );
-}
-
-void Renderer::draw_mesh(unsigned mesh, const Instance& instance) {
-    assert(mesh);
-
-    GLfloat x = instance.position.x;
-    GLfloat y = instance.position.y;
-    GLfloat scale = instance.scale * 1.0f;
 
     glLoadIdentity();
-    glTranslatef(x, y, 0.0f);
-    glScalef(scale, scale, scale);
-    glColor(instance.color);
+    glTranslatef(
+        static_cast<GLfloat>(instance.position.x),
+        static_cast<GLfloat>(instance.position.y), 0.0f);
+    glScalef(
+        static_cast<GLfloat>(instance.scale.x),
+        static_cast<GLfloat>(instance.scale.y), 1.0f);
+    glColor4f(
+        static_cast<GLfloat>(instance.color.r * colorMul),
+        static_cast<GLfloat>(instance.color.g * colorMul),
+        static_cast<GLfloat>(instance.color.b * colorMul),
+        static_cast<GLfloat>(instance.color.a * colorMul)
+    );
     glCallList(static_cast<GLuint>(mesh));
 }
 
-void Renderer::draw_mesh(unsigned mesh, const Instance* instances, std::size_t numInstance) {
+void Renderer::draw_meshes(Mesh mesh, const Instance* instances, std::size_t numInstance) {
     assert(instances);
     for (std::size_t i = 0; i < numInstance; ++i) {
         draw_mesh(mesh, instances[i]);
     }
-}
-
-
-void Renderer::draw_unfilled_rect(Color color, const Rect<float>& rect) {
-    glLoadIdentity();
-    glBegin(GL_LINE_LOOP);
-        glColor(color);
-        glVertex2f(rect.x1, rect.y1);
-        glVertex2f(rect.x2, rect.y1);
-        glVertex2f(rect.x2, rect.y2);
-        glVertex2f(rect.x1, rect.y2);
-    glEnd();
 }

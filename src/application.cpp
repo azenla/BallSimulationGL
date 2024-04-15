@@ -37,16 +37,34 @@ unsigned Application::generate_filled_circle(gfx::Renderer& render, float radius
     return render.create_mesh(vertices, indices);
 }
 
-void Application::render_quadtree_bounds(gfx::Renderer& render, const BallSimulator::CollisionQuadtree& tree) {
-    static auto* pRender = &render;
+unsigned Application::generate_unfilled_rect(gfx::Renderer& render, const Extent<float>& rect) {
+    std::array<uint16_t, 8> indices{ 0, 1, 1, 2, 2, 3, 3, 0 };
+    std::array<gfx::Vertex, 4> vertices{
+        gfx::Vertex{{ rect.x1, rect.y1 }},
+        gfx::Vertex{{ rect.x2, rect.y1 }},
+        gfx::Vertex{{ rect.x2, rect.y2 }},
+        gfx::Vertex{{ rect.x1, rect.y2 }}
+    };
+
+    return render.create_mesh(vertices, indices, gfx::PrimitiveType::LINES);
+}
+
+void Application::render_quadtree_bounds() {
+    static std::vector<gfx::Instance> instances;
     static void (*inner)(const BallSimulator::CollisionQuadtree&) =
             [](const BallSimulator::CollisionQuadtree& innerTree) {
-        auto bounds = innerTree.bounds();
-        gfx::Rect<float> rect = { bounds.x, bounds.y, bounds.x + bounds.w, bounds.y + bounds.h };
-        pRender->draw_unfilled_rect(gfx::Color::blue(), rect);
+        const auto& bounds = innerTree.bounds();
+        instances.push_back({
+            .position = bounds.position(),
+            .scale = bounds.size(),
+            .color = gfx::Color::blue()
+        });
         innerTree.for_each_node<decltype(inner)>(inner);
     };
-    inner(tree);
+    inner(world.quadtree());
+
+    renderer->draw_meshes(rectMesh, instances);
+    instances.clear();
 }
 
 void Application::render() {
@@ -73,11 +91,12 @@ void Application::render() {
     ballInstances.clear();
     ballInstances.reserve(world.entities().size());
 
+    // draw everything
     renderer->new_frame();
     for (auto& ball : world.entities()) {
         gfx::Instance instance;
         instance.position = ball->get_position();
-        instance.scale = ball->radius();
+        instance.scale = vec2f(ball->radius());
         if (ball->collisionFlash > 0) {
             instance.color = gfx::Color::yellow();
             --ball->collisionFlash;
@@ -86,8 +105,8 @@ void Application::render() {
         }
         ballInstances.emplace_back(instance);
     }
-    renderer->draw_mesh(ballMesh, ballInstances.data(), ballInstances.size());
-    render_quadtree_bounds(*renderer, world.quadtree());
+    renderer->draw_meshes(ballMesh, ballInstances);
+    render_quadtree_bounds();
 }
 
 bool Application::init() {
@@ -152,8 +171,10 @@ bool Application::init() {
     }
     world.scatter();
 
+    // create meshes for rendering
     ballMesh = generate_filled_circle(*renderer);
-    if (ballMesh == 0) {
+    rectMesh = generate_unfilled_rect(*renderer);
+    if (ballMesh == 0 || rectMesh == 0) {
         return false;
     }
 
@@ -162,6 +183,7 @@ bool Application::init() {
 
 void Application::quit() {
     if (renderer) {
+        renderer->delete_mesh(rectMesh);
         renderer->delete_mesh(ballMesh);
         renderer.reset();  // ensure the renderer is deleted before terminating glfw
     }

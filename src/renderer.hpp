@@ -1,9 +1,9 @@
 #pragma once
 
 #include "vec2.hpp"
+#include "rectangle.hpp"
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 namespace gfx {
     struct Vertex {
@@ -32,14 +32,15 @@ namespace gfx {
 
     struct Instance {
         vec2f position = vec2f::zero();
-        float scale = 1.0f;
+        vec2f scale = vec2f::one();
         Color color = Color();
     };
 
-    template <typename T>
-    struct Rect {
-        T x1, y1, x2, y2;
+    enum class PrimitiveType {
+        POINTS, LINES, TRIANGLES
     };
+
+    typedef unsigned Mesh;
 
     class Renderer {
     public:
@@ -50,11 +51,22 @@ namespace gfx {
 
         void new_frame();
 
-        unsigned create_mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+        template <typename VertContainer, typename IdxContainer>
+        constexpr Mesh create_mesh(VertContainer&& vertices, IdxContainer&& indices,
+                PrimitiveType mode = PrimitiveType::TRIANGLES) {
+            return create_mesh(vertices.data(), vertices.size(), indices.data(), indices.size(), mode);
+        }
+        Mesh create_mesh(
+            const Vertex* vertices, std::size_t numVertices,
+            const uint16_t* indices, std::size_t numIndices,
+            PrimitiveType mode);
         void delete_mesh(unsigned mesh);
 
-        void draw_mesh(unsigned mesh, const Instance& instance);
-        void draw_mesh(unsigned mesh, const Instance* instances, std::size_t numInstance);
-        void draw_unfilled_rect(Color color, const Rect<float>& rect);
+        void draw_mesh(Mesh mesh, const Instance& instance);
+        template <typename InstanceContainer>
+        constexpr void draw_meshes(Mesh mesh, InstanceContainer&& instances) {
+            draw_meshes(mesh, instances.data(), instances.size());
+        }
+        void draw_meshes(Mesh mesh, const Instance* instances, std::size_t numInstance);
     };
 }

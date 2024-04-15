@@ -12,6 +12,8 @@ public:
 
     constexpr vec2(T x, T y) : x(x), y(y) {}
 
+    constexpr explicit vec2(T v) : x(v), y(v) {}
+
     constexpr vec2(const vec2<T>& v) : x(v.x), y(v.y) {}
 
     constexpr vec2(vec2<T>&& v) : x(v.x), y(v.y) {}
@@ -22,6 +24,7 @@ public:
     // constants
 
     static constexpr vec2<T> zero() { return { static_cast<T>(0), static_cast<T>(0) }; }
+    static constexpr vec2<T> one() { return { static_cast<T>(1), static_cast<T>(1) }; }
 
     // assignment
 

@@ -176,6 +176,10 @@ public:
         append_our_objects(objects);
     }
 
+    constexpr bool has_child_nodes() const {
+        return _nodes != nullptr;
+    }
+
     template <typename F>
     void for_each_node(F func) const {
         if (_nodes != nullptr) {
