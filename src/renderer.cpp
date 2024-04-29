@@ -4,15 +4,8 @@
 
 using namespace gfx;
 
-static constexpr float colorMul = 1.0f / static_cast<float>(0xFF);
-
-Renderer::Renderer(Color clear) {
-    glClearColor(
-        static_cast<GLfloat>(clear.r * colorMul),
-        static_cast<GLfloat>(clear.g * colorMul),
-        static_cast<GLfloat>(clear.b * colorMul),
-        static_cast<GLfloat>(clear.a * colorMul)
-    );
+Renderer::Renderer(const colorf& clear) {
+    glClearColor(clear.r, clear.g, clear.b, clear.a);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glMatrixMode(GL_PROJECTION);
@@ -26,11 +19,7 @@ Renderer::~Renderer() {
 
 
 void Renderer::viewport(int width, int height) {
-    glViewport(
-        static_cast<GLint>(0),
-        static_cast<GLint>(0),
-        static_cast<GLsizei>(width),
-        static_cast<GLsizei>(height));
+    glViewport(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, width, height, 0, -1, 1);
@@ -42,13 +31,20 @@ void Renderer::new_frame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-unsigned Renderer::create_mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
+Mesh Renderer::create_mesh(const Span<Vertex> vertices, const Span<uint16_t> indices, PrimitiveType mode) {
+    GLenum beginMode;
+    switch (mode) {
+        case PrimitiveType::POINTS:    beginMode = GL_POINTS; break;
+        case PrimitiveType::LINES:     beginMode = GL_LINES; break;
+        case PrimitiveType::TRIANGLES: beginMode = GL_TRIANGLES; break;
+    }
+
     GLuint list = glGenLists(1);
     if (list == 0) {
-        return 0;
+        return Mesh();
     }
     glNewList(list, GL_COMPILE);
-        glBegin(GL_TRIANGLES);
+        glBegin(beginMode);
             for (auto index : indices) {
                 assert(index < vertices.size());
                 const Vertex& vertex = vertices[index];
@@ -56,53 +52,40 @@ unsigned Renderer::create_mesh(const std::vector<Vertex>& vertices, const std::v
             }
         glEnd();
     glEndList();
-    return static_cast<unsigned>(list);
+    return Mesh(list);
 }
 
-void Renderer::delete_mesh(unsigned mesh) {
-    assert(mesh);
-    glDeleteLists(mesh, 1);
-}
-
-
-static void glColor(Color color) {
-    glColor4f(
-        static_cast<GLfloat>(color.r * colorMul),
-        static_cast<GLfloat>(color.g * colorMul),
-        static_cast<GLfloat>(color.b * colorMul),
-        static_cast<GLfloat>(color.a * colorMul)
-    );
-}
-
-void Renderer::draw_mesh(unsigned mesh, const Instance& instance) {
-    assert(mesh);
-
-    GLfloat x = instance.position.x;
-    GLfloat y = instance.position.y;
-    GLfloat scale = instance.scale * 1.0f;
-
-    glLoadIdentity();
-    glTranslatef(x, y, 0.0f);
-    glScalef(scale, scale, scale);
-    glColor(instance.color);
-    glCallList(static_cast<GLuint>(mesh));
-}
-
-void Renderer::draw_mesh(unsigned mesh, const Instance* instances, std::size_t numInstance) {
-    assert(instances);
-    for (std::size_t i = 0; i < numInstance; ++i) {
-        draw_mesh(mesh, instances[i]);
+void Renderer::delete_mesh(Mesh& mesh) {
+    if (mesh.valid()) {
+        glDeleteLists(mesh.get_hnd(), 1);
+        mesh = Mesh();
     }
 }
 
-
-void Renderer::draw_unfilled_rect(Color color, const Rect<float>& rect) {
+static inline void inner_draw_mesh(Mesh mesh, const Instance& instance) {
     glLoadIdentity();
-    glBegin(GL_LINE_LOOP);
-        glColor(color);
-        glVertex2f(rect.x1, rect.y1);
-        glVertex2f(rect.x2, rect.y1);
-        glVertex2f(rect.x2, rect.y2);
-        glVertex2f(rect.x1, rect.y2);
-    glEnd();
+    glTranslatef(
+        static_cast<GLfloat>(instance.position.x),
+        static_cast<GLfloat>(instance.position.y), 0.0f
+    );
+    glScalef(
+        static_cast<GLfloat>(instance.scale.x),
+        static_cast<GLfloat>(instance.scale.y), 1.0f
+    );
+    colorf fc(instance.color);
+    glColor4f(fc.r, fc.g, fc.b, fc.a);
+    glCallList(static_cast<GLuint>(mesh.get_hnd()));
+}
+
+void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
+    assert(mesh.valid());
+    inner_draw_mesh(mesh, instance);
+}
+
+void Renderer::draw_mesh(Mesh mesh, const Span<Instance> instances) {
+    assert(mesh.valid());
+    assert(instances.data());
+    for (auto& instance : instances) {
+        inner_draw_mesh(mesh, instance);
+    }
 }

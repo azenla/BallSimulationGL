@@ -92,7 +92,7 @@ public:
         _bounds(bounds) {
     }
 
-    constexpr const std::vector<T*>& objects() const { return _objects; }
+    constexpr const std::vector<RefT>& objects() const { return _objects; }
     constexpr const Rectangle<float>& bounds() const { return _bounds; }
 
     void clear() {
@@ -174,6 +174,10 @@ public:
         }
 
         append_our_objects(objects);
+    }
+
+    constexpr bool has_child_nodes() const {
+        return _nodes != nullptr;
     }
 
     template <typename F>
