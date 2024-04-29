@@ -6,7 +6,8 @@
 using namespace BallSimulator;
 
 int main() {
-    World world(1024, 1024);
+    World world;
+    world.resize({ 0, 0, 1024, 1024 });
 
     for (auto i = 1; i <= 20; i++) {
         world.add(Ball(5.0f, 20.0f));

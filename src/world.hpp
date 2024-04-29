@@ -6,21 +6,20 @@
 
 namespace BallSimulator {
     class World {
-        float _width;
-        float _height;
         float _gravity;
         std::vector<std::unique_ptr<Ball>> _entities;
         CollisionQuadtree _quadtree;
         Rectangle<float> _bounds;
 
     public:
-        World(float width, float height);
+        World();
+        ~World() = default;
 
-        inline constexpr float width() const { return _width; }
-        inline constexpr float height() const { return _height; }
+        inline constexpr float width() const { return _bounds.w; }
+        inline constexpr float height() const { return _bounds.h; }
         inline constexpr float gravity() const { return _gravity; }
 
-        void resize(float width, float height);
+        void resize(const Rectangle<float>& bounds);
         inline void set_gravity(float gravity) { _gravity = gravity; }
         void scatter();
 

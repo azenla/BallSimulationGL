@@ -87,6 +87,7 @@ private:
     }
 
 public:
+    constexpr Quadtree(): _level(0), _bounds(Rectangle<float>::zero()) {}
     constexpr Quadtree(int level, const Rectangle<float>& bounds) :
         _level(level),
         _bounds(bounds) {
