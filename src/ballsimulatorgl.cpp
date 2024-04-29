@@ -37,13 +37,14 @@ gfx::Mesh BallSimulatorGl::generate_filled_circle(gfx::Renderer& render, float r
 }
 
 gfx::Mesh BallSimulatorGl::generate_filled_rect(gfx::Renderer& render, const Extent<float>& rect) {
-    constexpr std::array<uint16_t, 6> indices{ 0, 1, 2, 2, 3, 0 };
-    const gfx::Vertex vertices[4] = {
+    constexpr std::array<uint16_t, 6> indices{
+        0, 1, 2, 2, 3, 0
+    };
+    const std::array<gfx::Vertex, 4> vertices{{
         { rect.bottom_left() }, { rect.bottom_right() },
         { rect.top_right() }, { rect.top_left() }
-    };
-
-    return render.create_mesh(gfx::Span<gfx::Vertex>(vertices, 4), indices);
+    }};
+    return render.create_mesh(vertices, indices);
 }
 
 
@@ -125,7 +126,7 @@ void BallSimulatorGl::render(double deltaTime) {
 #endif
         static void (*inner)(const BallSimulator::CollisionQuadtree&) =
                 [](const BallSimulator::CollisionQuadtree& innerTree) {
-            
+
             const auto& bounds = innerTree.bounds();
             if (innerTree.has_child_nodes()) {
                 quads.push_back({

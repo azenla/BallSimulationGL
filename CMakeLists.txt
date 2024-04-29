@@ -23,7 +23,7 @@ add_executable(BallSimulatorGl
     src/application.cpp src/application.hpp
     src/ballsimulatorgl.cpp src/ballsimulatorgl.hpp
     src/main.cpp)
-set_property(TARGET BallSimulatorGl PROPERTY CXX_STANDARD 14)
+set_property(TARGET BallSimulatorGl PROPERTY CXX_STANDARD 20)
 target_link_libraries(BallSimulatorGl BallSimulator glfw OpenGL::GL)
 target_compile_definitions(BallSimulatorGl PRIVATE $<$<PLATFORM_ID:Darwin>:GL_SILENCE_DEPRECATION>)
 
