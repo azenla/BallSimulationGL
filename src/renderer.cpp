@@ -32,37 +32,60 @@ void Renderer::new_frame() {
 }
 
 Mesh Renderer::create_mesh(const Span<Vertex> vertices, const Span<uint16_t> indices, PrimitiveType mode) {
-    GLenum beginMode;
-    switch (mode) {
-        case PrimitiveType::POINTS:    beginMode = GL_POINTS; break;
-        case PrimitiveType::LINES:     beginMode = GL_LINES; break;
-        case PrimitiveType::TRIANGLES: beginMode = GL_TRIANGLES; break;
-    }
+    GLuint bufferIds[2];
+    glGenBuffers(2, bufferIds);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferIds[Mesh::VERTEX]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferIds[Mesh::ELEMENT]);
 
-    GLuint list = glGenLists(1);
-    if (list == 0) {
-        return Mesh();
-    }
-    glNewList(list, GL_COMPILE);
-        glBegin(beginMode);
-            for (auto index : indices) {
-                assert(index < vertices.size());
-                const Vertex& vertex = vertices[index];
-                glVertex2f(vertex.position.x, vertex.position.y);
-            }
-        glEnd();
-    glEndList();
-    return Mesh(list);
+    glBufferData(GL_ARRAY_BUFFER,
+        sizeof(Vertex) * vertices.size(),
+        vertices.data(),
+        GL_STATIC_DRAW
+    );
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+        sizeof(uint16_t) * indices.size(),
+        indices.data(),
+        GL_STATIC_DRAW
+    );
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0u);
+    glBindBuffer(GL_ARRAY_BUFFER, 0u);
+
+    return Mesh(mode, bufferIds[Mesh::VERTEX], bufferIds[Mesh::ELEMENT], static_cast<int32_t>(indices.size()));
 }
 
 void Renderer::delete_mesh(Mesh& mesh) {
     if (mesh.valid()) {
-        glDeleteLists(mesh.get_hnd(), 1);
+        GLuint bufferIds[2] = { mesh.get_buffer(Mesh::VERTEX), mesh.get_buffer(Mesh::ELEMENT) };
+        glDeleteBuffers(2, bufferIds);
         mesh = Mesh();
     }
 }
 
-static inline void inner_draw_mesh(Mesh mesh, const Instance& instance) {
+
+static inline GLenum gl_draw_mode(const Mesh& mesh) {
+    switch (mesh.mode()) {
+        case PrimitiveType::POINTS:    return GL_POINTS;
+        case PrimitiveType::LINES:     return GL_LINES;
+        case PrimitiveType::TRIANGLES: return GL_TRIANGLES;
+    }
+}
+
+static inline void gl_inner_bind_mesh(Mesh& mesh) {
+    glEnableClientState(GL_VERTEX_ARRAY);
+
+    glBindBuffer(GL_ARRAY_BUFFER,
+        static_cast<GLuint>(mesh.get_buffer(Mesh::VERTEX))
+    );
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
+        static_cast<GLuint>(mesh.get_buffer(Mesh::ELEMENT))
+    );
+
+    glVertexPointer(2, GL_FLOAT, sizeof(Vertex), static_cast<GLvoid*>(0));
+}
+
+static inline void gl_inner_draw_mesh(GLenum mode, GLsizei numelements, const Instance& instance) {
+
     glLoadIdentity();
     glTranslatef(
         static_cast<GLfloat>(instance.position.x),
@@ -74,18 +97,38 @@ static inline void inner_draw_mesh(Mesh mesh, const Instance& instance) {
     );
     colorf fc(instance.color);
     glColor4f(fc.r, fc.g, fc.b, fc.a);
-    glCallList(static_cast<GLuint>(mesh.get_hnd()));
+
+    glDrawElements(mode, numelements, GL_UNSIGNED_SHORT, static_cast<GLvoid*>(0));
 }
 
-void Renderer::draw_mesh(Mesh mesh, const Instance& instance) {
+static inline void gl_inner_unbind() {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0u);
+    glBindBuffer(GL_ARRAY_BUFFER, 0u);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+void Renderer::draw_mesh(Mesh& mesh, const Instance& instance) {
     assert(mesh.valid());
-    inner_draw_mesh(mesh, instance);
+
+    auto drawmode = gl_draw_mode(mesh);
+    auto numelements = static_cast<GLsizei>(mesh.element_count());
+
+    gl_inner_bind_mesh(mesh);
+    gl_inner_draw_mesh(drawmode, numelements, instance);
+    gl_inner_unbind();
 }
 
-void Renderer::draw_mesh(Mesh mesh, const Span<Instance> instances) {
+void Renderer::draw_mesh(Mesh& mesh, const Span<Instance> instances) {
     assert(mesh.valid());
     assert(instances.data());
+
+    auto drawmode = gl_draw_mode(mesh);
+    auto numelements = static_cast<GLsizei>(mesh.element_count());
+
+    gl_inner_bind_mesh(mesh);
     for (auto& instance : instances) {
-        inner_draw_mesh(mesh, instance);
+        gl_inner_draw_mesh(drawmode, numelements, instance);
     }
+    gl_inner_unbind();
 }
