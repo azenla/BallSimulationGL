@@ -36,13 +36,13 @@ protected:
 
     vec2d get_cursor_pos();
 
-    virtual bool init() {};
-    virtual void quit() {};
+    virtual bool init() = 0;
+    virtual void quit() = 0;
 
-    virtual void render(double deltaTime) {};
+    virtual void render(double deltaTime) = 0;
 
     virtual void resize(int width, int height);
-    virtual void mouse(int button, int action) {};
+    virtual void mouse(int button, int action) = 0;
 
 private:
     const std::string _title;
