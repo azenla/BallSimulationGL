@@ -31,7 +31,7 @@ void Renderer::new_frame() {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-Mesh Renderer::create_mesh(const Span<Vertex> vertices, const Span<uint16_t> indices, PrimitiveType mode) {
+Mesh Renderer::create_mesh(std::span<const Vertex> vertices, std::span<const uint16_t> indices, PrimitiveType mode) {
     GLuint bufferIds[2];
     glGenBuffers(2, bufferIds);
     glBindBuffer(GL_ARRAY_BUFFER, bufferIds[Mesh::VERTEX]);
@@ -119,7 +119,7 @@ void Renderer::draw_mesh(Mesh& mesh, const Instance& instance) {
     gl_inner_unbind();
 }
 
-void Renderer::draw_mesh(Mesh& mesh, const Span<Instance> instances) {
+void Renderer::draw_mesh(Mesh& mesh, std::span<const Instance> instances) {
     assert(mesh.valid());
     assert(instances.data());
 
