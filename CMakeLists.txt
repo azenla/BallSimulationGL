@@ -12,7 +12,7 @@ add_library(BallSimulator
     src/ball.cpp src/ball.hpp
     src/world.cpp src/world.hpp
     src/simulator.cpp src/simulator.hpp)
-set_property(TARGET BallSimulator PROPERTY CXX_STANDARD 14)
+set_property(TARGET BallSimulator PROPERTY CXX_STANDARD 20)
 
 add_executable(BallSimulatorGl MACOSX_BUNDLE WIN32
     src/renderer.cpp src/renderer.hpp
