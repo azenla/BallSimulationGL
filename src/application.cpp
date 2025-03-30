@@ -124,7 +124,12 @@ int Application::run() {
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                mouse(static_cast<int>(event.button.button), event.button.down);
+                switch (event.button.button) {
+                case SDL_BUTTON_LEFT:   mouse(MouseButton::LEFT, event.button.down); break;
+                case SDL_BUTTON_MIDDLE: mouse(MouseButton::MIDDLE, event.button.down); break;
+                case SDL_BUTTON_RIGHT:  mouse(MouseButton::RIGHT, event.button.down); break;
+                default: break;
+                }
                 break;
 
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:

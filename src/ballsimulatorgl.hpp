@@ -27,7 +27,7 @@ class BallSimulatorGl final : public Application {
     virtual void render(double deltatime);
 
     virtual void resize(int width, int height);
-    virtual void mouse(int button, bool pressed);
+    virtual void mouse(MouseButton button, bool pressed);
 
 public:
     BallSimulatorGl();

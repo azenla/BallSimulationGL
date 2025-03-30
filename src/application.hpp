@@ -21,6 +21,10 @@ public:
         OFF, VSYNC, ADAPTIVE_VSYNC
     };
 
+    enum class MouseButton {
+        LEFT, RIGHT, MIDDLE
+    };
+
     Application(int width, int height, std::string&& title, SwapInterval swap = SwapInterval::VSYNC)
         : _initialWidth(width), _initialHeight(height), _title(std::forward<std::string>(title)), _swap(swap) {};
     virtual ~Application() = default;
@@ -43,7 +47,7 @@ protected:
     virtual void render(double deltaTime) = 0;
 
     virtual void resize(int width, int height);
-    virtual void mouse(int button, bool pressed) = 0;
+    virtual void mouse(MouseButton button, bool pressed) = 0;
 
 private:
     const std::string _title;
