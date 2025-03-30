@@ -35,15 +35,8 @@ bool Application::setup() {
 
     // setup OpenGL context
     _glCtx = SDL_GL_CreateContext(_window);
-    if (_glCtx == nullptr) {
+    if (_glCtx == nullptr || !SDL_GL_MakeCurrent(_window, _glCtx)) {
         std::cerr << "SDL Error: " << SDL_GetError() << std::endl;
-        SDL_DestroyWindow(_window);
-        return false;
-    }
-    if (!SDL_GL_MakeCurrent(_window, _glCtx)) {
-        std::cerr << "SDL Error: " << SDL_GetError() << std::endl;
-        SDL_GL_DestroyContext(_glCtx);
-        SDL_DestroyWindow(_window);
         return false;
     }
     switch (_swap) {
@@ -71,6 +64,20 @@ bool Application::setup() {
     return true;
 }
 
+void Application::shutdown() {
+    _renderer.reset();  // ensure the renderer is deleted before deleting context
+    if (_glCtx != nullptr) {
+        SDL_GL_MakeCurrent(nullptr, nullptr);
+        SDL_GL_DestroyContext(_glCtx);
+        _glCtx = nullptr;
+    }
+    if (_window != nullptr) {
+        SDL_DestroyWindow(_window);
+        _window = nullptr;
+    }
+    SDL_Quit();
+}
+
 
 vec2d Application::get_cursor_pos() {
     vec2f cursorPos;
@@ -91,14 +98,14 @@ int Application::run() {
         return 1;
     }
     if (!setup()) {
-        SDL_Quit();
+        shutdown();
         return 1;
     }
 
     // call user init
     if (!init()) {
         quit();
-        SDL_Quit();
+        shutdown();
         return 1;
     }
 
@@ -134,10 +141,7 @@ int Application::run() {
     } while (!shouldClose);
 
     quit();
-    _renderer.reset();  // ensure the renderer is deleted before deleting context
-    SDL_GL_DestroyContext(_glCtx);
-    SDL_DestroyWindow(_window);
-    SDL_Quit();
+    shutdown();
 
     return 0;
 }

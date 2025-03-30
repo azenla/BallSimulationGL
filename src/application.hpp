@@ -59,4 +59,5 @@ private:
     uint64_t lastFrameTime;
 
     bool setup();
+    void shutdown();
 };
