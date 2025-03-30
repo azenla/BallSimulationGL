@@ -141,29 +141,6 @@ public:
         return *this;
     }
 
-    inline constexpr vec2<T> normalized() {
-        T len = length();
-        return len > 0 ? *this / len : vec2<T>(0, 0);
-    }
-
-    inline vec2<T> normalize() {
-        T len = length();
-        if (!len) {
-            return { 0, 0 };
-        }
-
-        T invLen = static_cast<T>(1) / len;
-        x *= invLen;
-        y *= invLen;
-
-        return *this;
-    }
-
-    inline constexpr T dist(const vec2<T>& v) const {
-        vec2<T> d(v.x - x, v.y - y);
-        return d.length();
-    }
-
     inline constexpr T length() const {
         return std::sqrt(x * x + y * y);
     }
@@ -172,36 +149,12 @@ public:
         return x * x + y * y;
     }
 
-    inline void truncate(double length) {
-        double angle = atan2f(y, x);
-        x = length * cos(angle);
-        y = length * sin(angle);
-    }
-
-    inline constexpr vec2<T> ortho() const {
-        return vec2<T>(y, -x);
-    }
-
-    inline constexpr vec2<T> transformAngular(T sin, T cos, bool reverse) const {
-        return vec2<T>(
-            reverse
-            ? (x * cos  + y * sin)
-            : (x * cos  - y * sin),
-            reverse
-            ? (y * cos - x * sin)
-            : (y * cos + x * sin));
-    }
-
     std::string str() const {
         return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
     }
 
     inline constexpr static T dot(vec2<T> v1, vec2<T> v2) {
         return v1.x * v2.x + v1.y * v2.y;
-    }
-
-    inline constexpr static T cross(vec2<T> v1, vec2<T> v2) {
-        return (v1.x * v2.y) - (v1.y * v2.x);
     }
 };
 
