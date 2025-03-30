@@ -61,6 +61,8 @@ bool Application::setup() {
     calculate_content_size_and_scale();
     _renderer->viewport(_frameWidth, _frameHeight);
 
+    _cursorPos = vec2d::zero();
+
     return true;
 }
 
@@ -78,12 +80,6 @@ void Application::shutdown() {
     SDL_Quit();
 }
 
-
-vec2d Application::get_cursor_pos() {
-    vec2f cursorPos;
-    SDL_GetMouseState(&cursorPos.x, &cursorPos.y);
-    return static_cast<vec2d>(cursorPos) * _contentScale;
-}
 
 void Application::resize(int width, int height) {
     _frameWidth = width;
@@ -120,6 +116,11 @@ int Application::run() {
             switch (event.type) {
             case SDL_EVENT_QUIT:
                 shouldClose = true;
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                _cursorPos = static_cast<vec2d>(vec2f(event.motion.x, event.motion.y));
+                _cursorPos *= _contentScale;
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:

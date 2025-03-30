@@ -35,7 +35,7 @@ protected:
         return { 0, 0, _frameWidth, _frameHeight };
     };
 
-    vec2d get_cursor_pos();
+    [[nodiscard]] constexpr vec2d get_cursor_pos() const noexcept { return _cursorPos; }
 
     virtual bool init() = 0;
     virtual void quit() = 0;
@@ -55,6 +55,7 @@ private:
     std::unique_ptr<gfx::Renderer> _renderer;
     int _frameWidth, _frameHeight;
     vec2d _contentScale;
+    vec2d _cursorPos;
 
     uint64_t lastFrameTime;
 
