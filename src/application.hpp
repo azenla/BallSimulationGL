@@ -12,7 +12,8 @@ public:
     void frame(double deltaTime, void (*resultCallback)(double fps));
 };
 
-typedef struct GLFWwindow GLFWwindow;
+typedef struct SDL_Window SDL_Window;
+typedef struct SDL_GLContextState* SDL_GLContext;
 
 class Application {
 public:
@@ -42,14 +43,15 @@ protected:
     virtual void render(double deltaTime) = 0;
 
     virtual void resize(int width, int height);
-    virtual void mouse(int button, int action) = 0;
+    virtual void mouse(int button, bool pressed) = 0;
 
 private:
     const std::string _title;
     const int _initialWidth, _initialHeight;
     const SwapInterval _swap;
 
-    GLFWwindow* _window = nullptr;
+    SDL_Window* _window = nullptr;
+    SDL_GLContext _glCtx = nullptr;
     std::unique_ptr<gfx::Renderer> _renderer;
     int _frameWidth, _frameHeight;
     vec2d _contentScale;

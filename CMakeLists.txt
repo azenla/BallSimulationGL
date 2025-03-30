@@ -1,11 +1,7 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(BallSimulator LANGUAGES CXX)
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(deps/glfw)
-
+find_package(SDL3 REQUIRED CONFIG)
 find_package(OpenGL REQUIRED)
 
 add_library(BallSimulator
@@ -18,15 +14,15 @@ add_library(BallSimulator
     src/simulator.cpp src/simulator.hpp)
 set_property(TARGET BallSimulator PROPERTY CXX_STANDARD 14)
 
-add_executable(BallSimulatorGl
+add_executable(BallSimulatorGl MACOSX_BUNDLE WIN32
     src/renderer.cpp src/renderer.hpp
     src/application.cpp src/application.hpp
     src/ballsimulatorgl.cpp src/ballsimulatorgl.hpp
     src/main.cpp)
 set_property(TARGET BallSimulatorGl PROPERTY CXX_STANDARD 20)
-target_link_libraries(BallSimulatorGl BallSimulator glfw OpenGL::GL)
+target_link_libraries(BallSimulatorGl BallSimulator SDL3::SDL3 OpenGL::GL)
 target_compile_definitions(BallSimulatorGl PRIVATE $<$<PLATFORM_ID:Darwin>:GL_SILENCE_DEPRECATION>)
 
 add_executable(BallSimulatorCli src/main_cli.cpp)
-set_property(TARGET BallSimulatorCli PROPERTY CXX_STANDARD 14)
+set_property(TARGET BallSimulatorCli PROPERTY CXX_STANDARD 20)
 target_link_libraries(BallSimulatorCli BallSimulator)

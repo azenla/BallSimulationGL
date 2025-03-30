@@ -1,7 +1,7 @@
 #include "ballsimulatorgl.hpp"
 #include "simulator.hpp"
 
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL_mouse.h>
 #include <chrono>
 #include <algorithm>
 #include <iostream>
@@ -182,8 +182,8 @@ void BallSimulatorGl::resize(int width, int height) {
     world.scatter();
 }
 
-void BallSimulatorGl::mouse(int button, int action) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+void BallSimulatorGl::mouse(int button, bool pressed) {
+    if (button == SDL_BUTTON_LEFT && pressed) {
         BallSimulator::Ball ball(5.0f, 20.0f);
         ball.set_position(static_cast<vec2f>(get_cursor_pos()));
         ball.set_velocity(vec2f(10.0f, 10.0f));
