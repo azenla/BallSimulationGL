@@ -106,7 +106,6 @@ int Application::run() {
     }
 
     // run the main loop
-    double timeScaler = 1.0 / static_cast<double>(SDL_GetPerformanceFrequency());
     lastFrameTime = SDL_GetPerformanceCounter();
     bool shouldClose = false;
     do {
@@ -134,8 +133,9 @@ int Application::run() {
             }
         }
     
+        const auto timeDivisor = static_cast<double>(SDL_GetPerformanceFrequency());
         const auto currentTime = SDL_GetPerformanceCounter();
-        const auto deltaTime = timeScaler * static_cast<double>(currentTime - lastFrameTime);
+        const auto deltaTime = static_cast<double>(currentTime - lastFrameTime) / timeDivisor;
         lastFrameTime = currentTime;
         render(deltaTime);
         SDL_GL_SwapWindow(_window);
