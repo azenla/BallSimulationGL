@@ -1,5 +1,12 @@
 #include "renderer.hpp"
-#include <GLFW/glfw3.h>
+
+#if defined(__APPLE__)
+# include <OpenGL/gl.h>
+#else
+# include <GL/gl.h>
+#endif
+#include <SDL3/SDL_opengl.h>
+
 #include <cassert>
 
 using namespace gfx;
