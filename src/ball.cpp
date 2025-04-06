@@ -14,7 +14,7 @@ bool Ball::collide(Ball& other) {
     float totalRadius = radius() + other.radius();
     vec2f delta = get_position() - other.get_position();
     float distance2 = delta.length2();
-    if (totalRadius * totalRadius < distance2) {
+    if (distance2 == 0.0f || totalRadius * totalRadius < distance2) {
         return false;
     }
 
