@@ -1,10 +1,7 @@
 #include "renderer.hpp"
 
-#if defined(__APPLE__)
-# include <OpenGL/gl.h>
-#else
-# include <GL/gl.h>
-#endif
+#define GLAD_GL_IMPLEMENTATION
+#include "gl.h"
 #include <SDL3/SDL_opengl.h>
 
 #include <cassert>

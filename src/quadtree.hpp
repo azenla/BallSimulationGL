@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <functional>
+#include <memory>
 
 template <typename T, int MaxObjects, int MaxLevels>
 class Quadtree {

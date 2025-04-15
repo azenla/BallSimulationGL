@@ -8,6 +8,7 @@
 #include <limits>
 #include <algorithm>
 #include <cassert>
+#include <type_traits>
 
 namespace gfx {
     struct Vertex {
@@ -36,13 +37,15 @@ namespace gfx {
         constexpr Color& operator =(const Color<T>& other) noexcept = default;
         ~Color() noexcept = default;
 
-        constexpr explicit Color<std::uint8_t>(Color<float> other) noexcept :
+        template <typename A>
+        constexpr explicit Color(Color<A> other) noexcept requires(std::is_same<T, std::uint8_t>::value && std::is_same<A, float>::value) :
             r(static_cast<std::uint8_t>(std::min(std::max(other.r * 255.0f, 0.0f), 255.0f))),
             g(static_cast<std::uint8_t>(std::min(std::max(other.g * 255.0f, 0.0f), 255.0f))),
             b(static_cast<std::uint8_t>(std::min(std::max(other.b * 255.0f, 0.0f), 255.0f))),
             a(static_cast<std::uint8_t>(std::min(std::max(other.a * 255.0f, 0.0f), 255.0f))) {}
 
-        constexpr explicit Color<float>(Color<std::uint8_t> other) noexcept {
+        template <typename A>
+        constexpr explicit Color(Color<A> other) noexcept requires(std::is_same<T, float>::value && std::is_same<A, std::uint8_t>::value) {
             constexpr float colorMul = 1.0f / static_cast<float>(0xFF);
             r = std::min(one(), static_cast<T>(other.r) * colorMul);
             g = std::min(one(), static_cast<T>(other.g) * colorMul);
