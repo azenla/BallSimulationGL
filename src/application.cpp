@@ -1,6 +1,7 @@
 #include "application.hpp"
 #include "renderer.hpp"
 
+#include "gl.h"
 #include <SDL3/SDL.h>
 #include <cmath>
 #include <iostream>
@@ -44,6 +45,11 @@ bool Application::setup() {
         case SwapInterval::ADAPTIVE_VSYNC: if (SDL_GL_SetSwapInterval(-1)) { break; }
         // fallthrough to vsync if adaptive is not available
         case SwapInterval::VSYNC:          SDL_GL_SetSwapInterval(1); break;
+    }
+
+    if (gladLoadGL(SDL_GL_GetProcAddress) == 0) {
+        std::cerr << "Failed to initialize OpenGL context" << std::endl;
+        return false;
     }
 
     // work out the content scale for scaling mouse input

@@ -33,7 +33,7 @@ public:
 
 protected:
 
-    constexpr gfx::Renderer& renderer() { return *_renderer.get(); }
+    [[nodiscard]] inline gfx::Renderer& renderer() noexcept { return *_renderer.get(); }
 
     constexpr Rectangle<int> get_frame() const {
         return { 0, 0, _frameWidth, _frameHeight };
